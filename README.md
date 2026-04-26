@@ -25,7 +25,7 @@ Coloca os ficheiros do repositório na mesma pasta que o teu notebook `.ipynb`. 
 from labs-starter-pack import *
 ```
 
-O módulo `base` agrega automaticamente todas as funções de `functions.py`, `operations.py` e `plot.py`, pelo que é o único import necessário para aceder a tudo.
+O módulo `labs-starter-pack` agrega automaticamente todas as funções de `functions.py`, `operations.py` e `plot.py`, pelo que é o único import necessário para aceder a tudo.
 
 Se quiseres importar os módulos individualmente:
 
@@ -60,7 +60,7 @@ Calcula uma função **linear**.
 **Output:** `coefs[0]*x + coefs[1]`
 
 ```python
-b.lin([2, 1], 3)  # → 7
+lin([2, 1], 3)  # → 7
 ```
 
 ---
@@ -77,7 +77,7 @@ Calcula uma função **quadrática**.
 **Output:** `coefs[0]*x² + coefs[1]*x + coefs[2]`
 
 ```python
-b.quadratic([1, 0, -1], 3)  # → 8
+quadratic([1, 0, -1], 3)  # → 8
 ```
 
 ---
@@ -182,7 +182,7 @@ Gera e exibe uma **tabela formatada** visualmente usando `matplotlib`, com cabe�
 **Output:** Exibe a tabela diretamente (sem valor de retorno).
 
 ```python
-b.getTable(
+getTable(
     columns=["Grandeza", "Valor", "Incerteza"],
     data=[
         ["Massa (kg)", "1.234", "0.002"],
@@ -204,31 +204,7 @@ b.getTable(
 
 ## 📊 `plot.py` — Visualização e Análise Gráfica
 
-Este ficheiro contém as funções de alto nível para gerar gráficos de regressão, análise de resíduos e comparação de múltiplos datasets. Todas usam internamente `b.getAdjust` para o ajuste ODR.
-
----
-
-### `plotLinReg(xs, ys, xerr, yerr, title, xlabel, ylabel)`
-
-Plota um **gráfico de regressão linear simples** com barras de erro.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `xs`      | `array` | Valores de x |
-| `ys`      | `array` | Valores de y |
-| `xerr`    | `float` ou `array` | Incerteza(s) em x |
-| `yerr`    | `float` ou `array` | Incerteza(s) em y |
-| `title`   | `str` | Título do gráfico |
-| `xlabel`  | `str` | Rótulo do eixo x (suporta LaTeX) |
-| `ylabel`  | `str` | Rótulo do eixo y (suporta LaTeX) |
-
-**Output:** Exibe o gráfico e devolve o objeto `adjust` (resultado do ajuste ODR com `adjust.beta` e `adjust.sd_beta`).
-
-```python
-adjust = b.plotLinReg(xs, ys, xerr, yerr, "Título", "x (m)", "y (s)")
-print(adjust.beta)      # [m, b] — coeficientes do ajuste
-print(adjust.sd_beta)   # incertezas associadas
-```
+Este ficheiro contém as funções de alto nível para gerar gráficos de regressão, análise de resíduos e comparação de múltiplos datasets. Todas usam internamente `getAdjust` para o ajuste ODR.
 
 ---
 
@@ -249,7 +225,7 @@ Plota um **gráfico de regressão quadrática** com barras de erro.
 **Output:** Exibe o gráfico e devolve o objeto `adjust`.
 
 ```python
-adjust = b.plotQuadReg(xs, ys, xerr, yerr, "Título", "x (m)", "y (m/s²)")
+adjust = plotQuadReg(xs, ys, xerr, yerr, "Título", "x (m)", "y (m/s²)")
 ```
 
 ---
@@ -305,7 +281,7 @@ Realiza uma **análise linear completa** de forma automática: faz o ajuste, cal
 **Output:** Exibe gráfico de regressão + gráfico de resíduos e devolve o objeto `adjust` final (apenas com pontos aceites).
 
 ```python
-adjust = b.fullLinAnalysis(
+adjust = fullLinAnalysis(
     x, y, 0.01, yerr,
     title=r"Posição\ vs\ Tempo",
     xlabel=r"t\ (s)",
@@ -332,7 +308,7 @@ Plota **múltiplos gráficos em coluna** (regressão + resíduos por linha), um 
 **Output:** Exibe a figura com todos os gráficos e devolve uma `list` com os objetos `adjust` de cada dataset.
 
 ```python
-adjusts = b.plotColumnFullLinReg(
+adjusts = plotColumnFullLinReg(
     xs=[x1, x2], ys=[y1, y2],
     xerrs=[xerr1, xerr2], yerrs=[yerr1, yerr2],
     titles=["Exp 1", "Exp 2"],
@@ -361,7 +337,7 @@ Plota **múltiplos datasets no mesmo gráfico**, cada um com a sua regressão li
 **Output:** Exibe o gráfico e devolve um `array` com os objetos `adjust` de cada dataset.
 
 ```python
-regs = b.plotMultipleReg(
+regs = plotMultipleReg(
     xs=[x1, x2], ys=[y1, y2],
     xerrs=0.01, yerrs=0.05,
     title="Comparação",
@@ -383,19 +359,19 @@ Semelhante a `plotColumnFullLinReg`, mas aceita **qualquer função de ajuste** 
 | `xerrs`, `yerrs` | `list` | Incertezas por dataset |
 | `titles`  | `list[str]` | Títulos de cada gráfico |
 | `xlabels`, `ylabels` | `str` ou `list[str]` | Rótulos dos eixos |
-| `func`    | `callable` | Função de ajuste a usar como modelo (ex: `b.quadratic`) |
+| `func`    | `callable` | Função de ajuste a usar como modelo (ex: `quadratic`) |
 | `beta0`   | `list` | Estimativa inicial dos coeficientes |
 | `tol`     | `float` | Tolerância para rejeição de pontos |
 
 **Output:** Exibe a figura em coluna e devolve uma `list` com os objetos `adjust` de cada dataset.
 
 ```python
-adjusts = b.plotColumnReg(
+adjusts = plotColumnReg(
     xs=[x1, x2], ys=[y1, y2],
     xerrs=[xerr1, xerr2], yerrs=[yerr1, yerr2],
     titles=["Exp 1", "Exp 2"],
     xlabels=r"x\ (m)", ylabels=r"E\ (J)",
-    func=b.quadratic,
+    func=quadratic,
     beta0=[1, 1, 0]
 )
 ```
