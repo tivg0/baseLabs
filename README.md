@@ -9,7 +9,7 @@ Uma biblioteca Python desenvolvida para apoiar a análise de dados experimentais
 ```
 labs2-starter-pack/
 │
-├── base.py           # Módulo principal (re-exporta funções de functions.py, operations.py e plot.py)
+├── __init__.py           # Módulo principal (re-exporta funções de functions.py, operations.py e plot.py)
 ├── functions.py      # Funções matemáticas para ajustes/regressões
 ├── operations.py     # Operações de dados, ajustes ODR e utilitários
 ├── plot.py           # Funções de visualização e análise gráfica
@@ -22,7 +22,7 @@ labs2-starter-pack/
 Coloca os ficheiros do repositório na mesma pasta que o teu notebook `.ipynb`. Depois importa o módulo principal:
 
 ```python
-import base as b
+from labs-starter-pack import *
 ```
 
 O módulo `base` agrega automaticamente todas as funções de `functions.py`, `operations.py` e `plot.py`, pelo que é o único import necessário para aceder a tudo.
