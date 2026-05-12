@@ -3,6 +3,7 @@ import numpy as np
 from .functions import *
 from .operations import *
 
+
 def plotLinReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
     plt.figure(figsize=(12,8))
     plt.errorbar(xs,ys, xerr=xerr, yerr=yerr, c="black", fmt="o")
