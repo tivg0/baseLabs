@@ -1,15 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import base as b
+from .functions import *
+from .operations import *
 
 def plotLinReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
     plt.figure(figsize=(12,8))
     plt.errorbar(xs,ys, xerr=xerr, yerr=yerr, c="black", fmt="o")
 
-    adjust = b.getAdjust(b.lin, xs, ys, xerr, yerr)
+    adjust = getAdjust(lin, xs, ys, xerr, yerr)
     x = np.linspace(min(xs), max(xs),100)
-    y = b.lin(adjust.beta, x)
-    plt.plot(x,y, c="orange", label=b.getPolynomialLabel2(adjust.beta,xlabel,ylabel))
+    y = lin(adjust.beta, x)
+    plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta,xlabel,ylabel))
 
     plt.title(title)
     plt.xlabel(xlabel)
@@ -23,10 +24,10 @@ def plotQuadReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
     plt.figure(figsize=(12,8))
     plt.errorbar(xs,ys, xerr=xerr, yerr=yerr, c="black", fmt="o")
 
-    adjust = b.getAdjust(b.quadratic, xs, ys, xerr, yerr,[1,1,1])
+    adjust = getAdjust(quadratic, xs, ys, xerr, yerr,[1,1,1])
     x = np.linspace(min(xs), max(xs),100)
-    y = b.quadratic(adjust.beta, x)
-    plt.plot(x,y, c="orange", label=b.getPolynomialLabel2(adjust.beta,xlabel,ylabel))
+    y = quadratic(adjust.beta, x)
+    plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta,xlabel,ylabel))
 
     plt.title(title)
     plt.xlabel(xlabel)
@@ -39,14 +40,14 @@ def plotQuadReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
 def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale='linear',yscale='linear'):
     plt.figure(figsize=(12,8))
     plt.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais")
-    adjust = b.getAdjust(b.lin, x1, y1, xerr1, yerr1,beta0)
+    adjust = getAdjust(lin, x1, y1, xerr1, yerr1,beta0)
     if len(xres) == 0:
         x = np.linspace(min(x1), max(x1),100)
     else:
         x = np.linspace(min(min(x1),min(xres)), max(max(x1),max(xres)),100)
     
-    y = b.lin(adjust.beta, x)
-    plt.plot(x,y, c="orange", label=b.getPolynomialLabel2(adjust.beta, xlabel,ylabel))
+    y = lin(adjust.beta, x)
+    plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta, xlabel,ylabel))
     if len(xres) != 0:
         plt.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
 
@@ -81,7 +82,7 @@ def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,beta0=[1,1],tol=1,xscale='
         xerr = np.full(len(x),xerr)
     if isinstance(yerr,(int,float)):
         yerr = np.full(len(y),yerr)
-    adjust = b.getAdjust(b.lin,x,y,xerr,yerr,beta0)
+    adjust = getAdjust(lin,x,y,xerr,yerr,beta0)
 
     res = y - x*adjust.beta[0] - adjust.beta[1]
 
@@ -96,8 +97,8 @@ def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,beta0=[1,1],tol=1,xscale='
     yerrTrue = yerr[abs(res) < stdy]
     xerrTrue = xerr[abs(res) < stdy]
 
-    adjustFinal = b.plotFinal(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,beta0,xscale,yscale)
-    b.finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel)
+    adjustFinal = plotFinal(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,beta0,xscale,yscale)
+    finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel)
     return adjustFinal
 
 
@@ -127,7 +128,7 @@ def plotColumnFullLinReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,beta0=[1,1],to
             xerr = np.full(len(x),xerr)
         if isinstance(yerr,(int,float)):
             yerr = np.full(len(y),yerr)
-        adjust = b.getAdjust(b.lin,x,y,xerr,yerr,beta0)
+        adjust = getAdjust(lin,x,y,xerr,yerr,beta0)
 
         res = y - x*adjust.beta[0] - adjust.beta[1]
 
@@ -143,15 +144,15 @@ def plotColumnFullLinReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,beta0=[1,1],to
         xerrTrue = xerr[abs(res) < stdy]
 
         ax.errorbar(xTrue,yTrue, xerr=xerrTrue, yerr=yerrTrue, c="black", fmt="o", label="Pontos Experimentais")
-        adjustTrue = b.getAdjust(b.lin, xTrue, yTrue, xerrTrue, yerrTrue,beta0)
+        adjustTrue = getAdjust(lin, xTrue, yTrue, xerrTrue, yerrTrue,beta0)
         adjusts.append(adjustTrue)
         if len(xFalse) == 0:
             x = np.linspace(min(xTrue), max(xTrue),100)
         else:
             x = np.linspace(min(min(xTrue),min(xFalse)), max(max(xTrue),max(xFalse)),100)
 
-        y = b.lin(adjustTrue.beta, x)
-        ax.plot(x,y, c="orange", label=b.getPolynomialLabel2(adjustTrue.beta,adjustTrue.sd_beta, xlabel,ylabel))
+        y = lin(adjustTrue.beta, x)
+        ax.plot(x,y, c="orange", label=getPolynomialLabel2(adjustTrue.beta,adjustTrue.sd_beta, xlabel,ylabel))
         if len(xFalse) != 0:
             ax.plot(xFalse,yFalse, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
 
@@ -203,13 +204,13 @@ def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Ponto
         else:
             yerr = yerrs[i]
 
-        adjust = b.getAdjust(b.lin,x,y,xerr,yerr,beta0)
+        adjust = getAdjust(lin,x,y,xerr,yerr,beta0)
         regs[i] = adjust
 
         plt.errorbar(x,y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
         xLin = np.linspace(np.min(x),np.max(x),50)
-        yLin = b.lin(adjust.beta, xLin)
-        plt.plot(xLin,yLin, c=color, label=b.getPolynomialLabel2(adjust.beta, xlabel,ylabel))
+        yLin = lin(adjust.beta, xLin)
+        plt.plot(xLin,yLin, c=color, label=getPolynomialLabel2(adjust.beta, xlabel,ylabel))
 
     plt.title(title)
     plt.xlabel(rf"${xlabel}$")
@@ -249,7 +250,7 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
             xerr = np.full(len(x),xerr)
         if isinstance(yerr,(int,float)):
             yerr = np.full(len(y),yerr)
-        adjust = b.getAdjust(func,x,y,xerr,yerr,beta0)
+        adjust = getAdjust(func,x,y,xerr,yerr,beta0)
 
         res = y - x*adjust.beta[0] - adjust.beta[1]
 
@@ -265,7 +266,7 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
         xerrTrue = xerr[abs(res) < stdy]
 
         ax.errorbar(xTrue,yTrue, xerr=xerrTrue, yerr=yerrTrue, c="black", fmt="o", label="Pontos Experimentais")
-        adjustTrue = b.getAdjust(func, xTrue, yTrue, xerrTrue, yerrTrue,beta0)
+        adjustTrue = getAdjust(func, xTrue, yTrue, xerrTrue, yerrTrue,beta0)
         adjusts.append(adjustTrue)
         if len(xFalse) == 0:
             x = np.linspace(min(xTrue), max(xTrue),100)
@@ -273,7 +274,7 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
             x = np.linspace(min(min(xTrue),min(xFalse)), max(max(xTrue),max(xFalse)),100)
 
         y = func(adjustTrue.beta, x)
-        ax.plot(x,y, c="orange", label=b.getPolynomialLabel2(adjustTrue.beta,adjustTrue.sd_beta, xlabel,ylabel))
+        ax.plot(x,y, c="orange", label=getPolynomialLabel2(adjustTrue.beta,adjustTrue.sd_beta, xlabel,ylabel))
         if len(xFalse) != 0:
             ax.plot(xFalse,yFalse, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
 
