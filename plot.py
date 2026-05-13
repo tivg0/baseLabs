@@ -181,7 +181,7 @@ def plotColumnFullLinReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,beta0=[1,1],to
         
     return adjusts
 
-def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Pontos Experimentais",tol=1,beta0=[1,1],xscale='linear',yscale='linear'):
+def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Pontos Experimentais",regressions=False,beta0=[1,1],xscale='linear',yscale='linear'):
     plt.figure(figsize=(12,8))
     regs = np.zeros([len(xs)],dtype=object)
 
@@ -211,7 +211,8 @@ def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Ponto
         plt.errorbar(x,y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
         xLin = np.linspace(np.min(x),np.max(x),50)
         yLin = lin(adjust.beta, xLin)
-        plt.plot(xLin,yLin, c=color, label=getPolynomialLabel2(adjust.beta, xlabel,ylabel))
+        if regressions:
+            plt.plot(xLin,yLin, c=color, label=getPolynomialLabel2(adjust.beta,adjust.sd_beta, xlabel,ylabel))
 
     plt.title(title)
     plt.xlabel(rf"${xlabel}$")
@@ -226,6 +227,7 @@ def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Ponto
 
 
 def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=1):
+
 
     fig, axs = plt.subplots(len(xs),2,figsize=(18,len(xs)*7))
     fig.subplots_adjust(hspace=0.3, wspace=0.3)
