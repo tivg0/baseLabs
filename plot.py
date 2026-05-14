@@ -181,7 +181,7 @@ def plotColumnFullLinReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,beta0=[1,1],to
         
     return adjusts
 
-def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Pontos Experimentais",regressions=False,beta0=[1,1],xscale='linear',yscale='linear'):
+def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Pontos Experimentais",regressions=False,beta0=[1,1],xscale='linear',yscale='linear', errorbars= True):
     plt.figure(figsize=(12,8))
     regs = np.zeros([len(xs)],dtype=object)
 
@@ -208,7 +208,10 @@ def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Ponto
         adjust = getAdjust(lin,x,y,xerr,yerr,beta0)
         regs[i] = adjust
 
-        plt.errorbar(x,y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
+        if errorbars:
+            plt.errorbar(x,y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
+        else:
+            plt.scatter(x,y, c=color, label=legends[i])
         xLin = np.linspace(np.min(x),np.max(x),50)
         yLin = lin(adjust.beta, xLin)
         if regressions:
