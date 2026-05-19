@@ -208,62 +208,6 @@ Este ficheiro contém as funções de alto nível para gerar gráficos de regres
 
 ---
 
-### `plotQuadReg(xs, ys, xerr, yerr, title, xlabel, ylabel)`
-
-Plota um **gráfico de regressão quadrática** com barras de erro.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `xs`      | `array` | Valores de x |
-| `ys`      | `array` | Valores de y |
-| `xerr`    | `float` ou `array` | Incerteza(s) em x |
-| `yerr`    | `float` ou `array` | Incerteza(s) em y |
-| `title`   | `str` | Título do gráfico |
-| `xlabel`  | `str` | Rótulo do eixo x |
-| `ylabel`  | `str` | Rótulo do eixo y |
-
-**Output:** Exibe o gráfico e devolve o objeto `adjust`.
-
-```python
-adjust = plotQuadReg(xs, ys, xerr, yerr, "Título", "x (m)", "y (m/s²)")
-```
-
----
-
-### `plotFinal(x1, y1, xres, yres, xerr1, yerr1, title, xlabel, ylabel, beta0=[1,1], xscale='linear', yscale='linear')`
-
-Plota um **gráfico de regressão linear** distinguindo visualmente os **pontos aceites** (preto) dos **pontos rejeitados** (vermelho). Usado internamente por `fullLinAnalysis`.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `x1`, `y1` | `array` | Pontos experimentais aceites |
-| `xres`, `yres` | `array` | Pontos experimentais rejeitados (pode ser vazio `[]`) |
-| `xerr1`, `yerr1` | `array` | Incertezas dos pontos aceites |
-| `title`   | `str` | Título (renderizado como LaTeX) |
-| `xlabel`, `ylabel` | `str` | Rótulos dos eixos (renderizados como LaTeX) |
-| `beta0`   | `list` | Estimativa inicial dos coeficientes (default: `[1,1]`) |
-| `xscale`, `yscale` | `str` | Escala dos eixos: `'linear'` ou `'log'` |
-
-**Output:** Exibe o gráfico e devolve o objeto `adjust`.
-
----
-
-### `finalResidues(xTrue, yTrue, xFalse, yFalse, adjust, stdy, xlabel, ylabel)`
-
-Plota o **gráfico de resíduos** de uma regressão linear, com linhas horizontais a delimitar o intervalo de aceitação.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `xTrue`, `yTrue` | `array` | Pontos aceites |
-| `xFalse`, `yFalse` | `array` | Pontos rejeitados |
-| `adjust`  | objeto ODR | Resultado do ajuste (com `adjust.beta`) |
-| `stdy`    | `float` | Limite do desvio padrão para aceitação |
-| `xlabel`, `ylabel` | `str` | Rótulos dos eixos (renderizados como LaTeX) |
-
-**Output:** Exibe o gráfico de resíduos (sem valor de retorno).
-
----
-
 ### `fullLinAnalysis(x, y, xerr, yerr, title, xlabel, ylabel, beta0=[1,1], tol=1, xscale='linear', yscale='linear')`
 
 Realiza uma **análise linear completa** de forma automática: faz o ajuste, calcula os resíduos, rejeita pontos fora do intervalo de tolerância e exibe tanto o gráfico de regressão como o de resíduos.
@@ -318,7 +262,7 @@ adjusts = plotColumnFullLinReg(
 
 ---
 
-### `plotMultipleReg(xs, ys, xerrs, yerrs, title, xlabel, ylabel, colors, legends="Pontos Experimentais", tol=1, beta0=[1,1], xscale='linear', yscale='linear')`
+### `plotMultipleReg(xs, ys, xerrs, yerrs, title, xlabel, ylabel, colors, legends="Pontos Experimentais", tol=1, beta0=[1,1], xscale='linear', yscale='linear', errorbars=True)`
 
 Plota **múltiplos datasets no mesmo gráfico**, cada um com a sua regressão linear e cor distinta.
 
@@ -333,6 +277,7 @@ Plota **múltiplos datasets no mesmo gráfico**, cada um com a sua regressão li
 | `tol`     | `float` | Tolerância para rejeição de pontos (default: `1`) |
 | `beta0`   | `list` | Estimativa inicial dos coeficientes |
 | `xscale`, `yscale` | `str` | Escala dos eixos |
+| `errorbars` | `bool` | Ativar/Desativar Barras de Erro |
 
 **Output:** Exibe o gráfico e devolve um `array` com os objetos `adjust` de cada dataset.
 
