@@ -208,6 +208,22 @@ Este ficheiro contém as funções de alto nível para gerar gráficos de regres
 
 ---
 
+### `plot(x, y, xs,ys,xerrs=None,yerrs=None,title="Título",xlabel="x",ylabel="y", label="Dados", color="black")`
+
+Simplesmente dá plot dos dados
+
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `x`, `y`  | `array` | Dados experimentais |
+| `xerr`, `yerr` | `float` ou `array` | Incertezas (valor único ou array) |
+| `title`   | `str` | Título do gráfico |
+| `xlabel`, `ylabel`, `label` | `str` | Rótulos dos eixos e dos pontos |
+| `color` | `str` | Cor dos pontos |
+
+**Output:** Gráfico com pontos
+
+---
+
 ### `fullLinAnalysis(x, y, xerr, yerr, title, xlabel, ylabel, beta0=[1,1], tol=1, xscale='linear', yscale='linear')`
 
 Realiza uma **análise linear completa** de forma automática: faz o ajuste, calcula os resíduos, rejeita pontos fora do intervalo de tolerância e exibe tanto o gráfico de regressão como o de resíduos.
