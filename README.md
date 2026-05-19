@@ -220,7 +220,7 @@ Simplesmente dá plot dos dados
 | `xlabel`, `ylabel`, `label` | `str` | Rótulos dos eixos e dos pontos |
 | `color` | `str` | Cor dos pontos |
 
-**Output:** Nada
+**Output:** Gráfico com pontos
 
 ---
 
