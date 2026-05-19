@@ -320,7 +320,7 @@ def plot(xs,ys,xerrs=None,yerrs=None,title="Título",xlabel="x",ylabel="y", labe
 
     if hlines != None:
         for i in hlines:
-            plt.axhline(i,color="red")
+            plt.axhline(i[0],color="red",label=i[1])
 
     plt.title(title)
     plt.xlabel(xlabel)
