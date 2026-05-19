@@ -242,6 +242,7 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
     if isinstance(ylabels, str):
         ylabels = [ylabels] * len(xs)
 
+
     for i in range(0,len(xs)):
         x=xs[i]
         y=ys[i]
@@ -252,10 +253,12 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
         ylabel = ylabels[i]
         ax = next(axsIter)
 
+
         if isinstance(xerr,(int,float)):
             xerr = np.full(len(x),xerr)
         if isinstance(yerr,(int,float)):
             yerr = np.full(len(y),yerr)
+
         adjust = getAdjust(func,x,y,xerr,yerr,beta0)
 
         res = y - x*adjust.beta[0] - adjust.beta[1]
@@ -307,3 +310,18 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
         ax.grid()
         
     return adjusts
+
+def plot(xs,ys,xerrs=None,yerrs=None,title="Título",xlabel="x",ylabel="y", label="Dados", color="black"):
+    plt.figure(figsize=(12,8))
+    if (xerrs == None).all() and (yerrs == None).all():
+        plt.scatter(xs,ys,c=color, label=label)
+    else:
+        plt.errorbar(xs,ys,xerr=xerrs,yerr=yerrs, fmt="o", c=color, label=label)
+
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.legend()
+    plt.grid()
+    plt.show()
+    
