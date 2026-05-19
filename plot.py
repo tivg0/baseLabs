@@ -311,12 +311,16 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
         
     return adjusts
 
-def plot(xs,ys,xerrs=None,yerrs=None,title="Título",xlabel="x",ylabel="y", label="Dados", color="black"):
+def plot(xs,ys,xerrs=None,yerrs=None,title="Título",xlabel="x",ylabel="y", label="Dados", color="black",hlines=None):
     plt.figure(figsize=(12,8))
     if (xerrs == None).all() and (yerrs == None).all():
         plt.scatter(xs,ys,c=color, label=label)
     else:
         plt.errorbar(xs,ys,xerr=xerrs,yerr=yerrs, fmt="o", c=color, label=label)
+
+    if hlines != None:
+        for i in hlines:
+            plt.axhline(i,color="red")
 
     plt.title(title)
     plt.xlabel(xlabel)
