@@ -224,7 +224,7 @@ Simplesmente dá plot dos dados
 
 ---
 
-### `fullLinAnalysis(x, y, xerr, yerr, title, xlabel, ylabel, beta0=[1,1], tol=1, xscale='linear', yscale='linear')`
+### `fullLinAnalysis(x, y, xerr, yerr, title, xlabel, ylabel, separate=True, beta0=[1,1], tol=1, xscale='linear', yscale='linear')`
 
 Realiza uma **análise linear completa** de forma automática: faz o ajuste, calcula os resíduos, rejeita pontos fora do intervalo de tolerância e exibe tanto o gráfico de regressão como o de resíduos.
 
@@ -234,11 +234,12 @@ Realiza uma **análise linear completa** de forma automática: faz o ajuste, cal
 | `xerr`, `yerr` | `float` ou `array` | Incertezas (valor único ou array) |
 | `title`   | `str` | Título do gráfico |
 | `xlabel`, `ylabel` | `str` | Rótulos dos eixos |
+| `separate` | `bool` | Separação dos gráficos de regressão e resíduos |
 | `beta0`   | `list` | Estimativa inicial dos coeficientes (default: `[1,1]`) |
 | `tol`     | `float` | Tolerância em número de desvios padrão para rejeição de pontos (default: `1`) |
 | `xscale`, `yscale` | `str` | Escala dos eixos: `'linear'` ou `'log'` |
 
-**Output:** Exibe gráfico de regressão + gráfico de resíduos e devolve o objeto `adjust` final (apenas com pontos aceites).
+**Output:** Exibe gráfico de regressão + gráfico de resíduos ou os dois colados(`separate=False`) e devolve o objeto `adjust` final (apenas com pontos aceites).
 
 ```python
 adjust = fullLinAnalysis(
