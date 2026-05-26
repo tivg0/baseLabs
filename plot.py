@@ -38,7 +38,7 @@ def plotQuadReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
     plt.show()
     return adjust
 
-def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale='linear',yscale='linear'):
+def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale='linear',yscale='linear',s=5):
     plt.figure(figsize=(12,8))
     adjust = getAdjust(lin, x1, y1, xerr1, yerr1,beta0)
     if len(xres) == 0:
@@ -48,10 +48,10 @@ def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale
     
     y = lin(adjust.beta, x)
     plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel),zorder=3)
-    plt.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais",zorder=2)
+    plt.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais",zorder=2,markersize=s)
 
     if len(xres) != 0:
-        plt.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",zorder=1)
+        plt.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",zorder=1,markersize=s)
 
     plt.title(rf"${title}$")
     plt.xlabel(rf"${xlabel}$")
@@ -63,7 +63,7 @@ def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale
     plt.show()
     return adjust
 
-def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,stdy,beta0=[1,1],xscale='linear',yscale='linear'):
+def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,stdy,beta0=[1,1],xscale='linear',yscale='linear',s=5):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
     adjust = getAdjust(lin, x1, y1, xerr1, yerr1,beta0)
@@ -74,10 +74,10 @@ def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,s
     
     y = lin(adjust.beta, x)
     ax1.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel),zorder=3)
-    ax1.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais",zorder=2)
+    ax1.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais",zorder=2, markersize=s)
 
     if len(xres) != 0:
-        ax1.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",zorder=1)
+        ax1.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",zorder=1, markersize=s)
 
     ax1.set_title(rf"${title}$")
     ax1.set_ylabel(rf"${ylabel}$")
@@ -91,10 +91,10 @@ def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,s
     ax2.axhline(0,c="red")
     ax2.axhline(stdy,c="orange")
     ax2.axhline(-stdy,c="orange")
-    ax2.scatter(x1,resTrue, c="black", s=3)
+    ax2.scatter(x1,resTrue, c="black", s=s)
     ax2.grid(axis="x")
     if len(xres) != 0:
-        ax2.scatter(xres,resFalse,c="red", s=3)
+        ax2.scatter(xres,resFalse,c="red", s=s)
 
     ax2.set_xlabel(rf"${xlabel}$")
     ax2.set_ylabel(rf"Resíduos ${ylabel}$")
@@ -103,7 +103,7 @@ def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,s
     plt.show()
     return adjust
 
-def finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel):
+def finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel,s):
     resTrue = yTrue - xTrue*adjust.beta[0] - adjust.beta[1]
     resFalse = yFalse - xFalse*adjust.beta[0] - adjust.beta[1]
 
@@ -111,15 +111,15 @@ def finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel):
     plt.axhline(0, c="black", alpha=0.5)
     plt.axhline(stdy, c="orange", label="Intervalo {} Desvio Padrão".format(stdy))
     plt.axhline(-stdy, c="orange")
-    plt.plot(xTrue,resTrue,c="black", marker="o", ls="", label="Pontos Experimentais")
-    plt.plot(xFalse,resFalse,c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
+    plt.plot(xTrue,resTrue,c="black", marker="o", ls="", label="Pontos Experimentais",s=s)
+    plt.plot(xFalse,resFalse,c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",s=s)
     plt.xlabel(rf'${xlabel}$')
     plt.ylabel(rf"$Res$ {ylabel}")
     plt.title("Resíduos E")
     plt.legend()
     plt.show()
 
-def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,separate = True, beta0=[1,1],tol=1,xscale='linear',yscale='linear'):
+def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,separate = True, beta0=[1,1],tol=1,xscale='linear',yscale='linear',s=5):
     if isinstance(xerr,(int,float)):
         xerr = np.full(len(x),xerr)
     if isinstance(yerr,(int,float)):
@@ -140,11 +140,11 @@ def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,separate = True, beta0=[1,
     xerrTrue = xerr[abs(res) < stdy]
 
     if separate:
-        adjustFinal = plotFinal(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,beta0,xscale,yscale)
-        finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel)
+        adjustFinal = plotFinal(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,beta0,xscale,yscale,s)
+        finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel,s)
         return adjustFinal
     else:
-        adjustFinal = plotFinalwResidues(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,adjust,stdy,beta0,xscale,yscale)
+        adjustFinal = plotFinalwResidues(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,adjust,stdy,beta0,xscale,yscale,s)
         return adjustFinal
 
 
