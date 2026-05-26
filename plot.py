@@ -40,7 +40,6 @@ def plotQuadReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
 
 def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale='linear',yscale='linear'):
     plt.figure(figsize=(12,8))
-    plt.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais")
     adjust = getAdjust(lin, x1, y1, xerr1, yerr1,beta0)
     if len(xres) == 0:
         x = np.linspace(min(x1), max(x1),100)
@@ -48,9 +47,11 @@ def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale
         x = np.linspace(min(min(x1),min(xres)), max(max(x1),max(xres)),100)
     
     y = lin(adjust.beta, x)
-    plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta, xlabel,ylabel))
+    plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel),zorder=3)
+    plt.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais",zorder=2)
+
     if len(xres) != 0:
-        plt.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
+        plt.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",zorder=1)
 
     plt.title(rf"${title}$")
     plt.xlabel(rf"${xlabel}$")
@@ -59,6 +60,46 @@ def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale
     plt.yscale(yscale)
     plt.legend()
     plt.grid()
+    plt.show()
+    return adjust
+
+def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,stdy,beta0=[1,1],xscale='linear',yscale='linear'):
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
+    adjust = getAdjust(lin, x1, y1, xerr1, yerr1,beta0)
+    if len(xres) == 0:
+        x = np.linspace(min(x1), max(x1),100)
+    else:
+        x = np.linspace(min(min(x1),min(xres)), max(max(x1),max(xres)),100)
+    
+    y = lin(adjust.beta, x)
+    ax1.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel),zorder=3)
+    ax1.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais",zorder=2)
+
+    if len(xres) != 0:
+        ax1.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",zorder=1)
+
+    ax1.set_title(rf"${title}$")
+    ax1.set_ylabel(rf"${ylabel}$")
+    ax1.set_xscale(xscale)
+    ax1.set_yscale(yscale)
+    ax1.legend()
+    ax1.grid()
+
+    resTrue = y1 - x1*adjust1.beta[0] - adjust1.beta[1]
+    resFalse = yres - xres*adjust1.beta[0] - adjust1.beta[1]
+    ax2.axhline(0,c="red")
+    ax2.axhline(stdy,c="orange")
+    ax2.axhline(-stdy,c="orange")
+    ax2.scatter(x1,resTrue, c="black", s=3)
+    ax2.grid(axis="x")
+    if len(xres) != 0:
+        ax2.scatter(xres,resFalse,c="red", s=3)
+
+    ax2.set_xlabel(rf"${xlabel}$")
+    ax2.set_ylabel(rf"Resíduos ${ylabel}$")
+
+    plt.subplots_adjust(hspace=0)
     plt.show()
     return adjust
 
@@ -78,7 +119,7 @@ def finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel):
     plt.legend()
     plt.show()
 
-def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,beta0=[1,1],tol=1,xscale='linear',yscale='linear'):
+def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,separate = True, beta0=[1,1],tol=1,xscale='linear',yscale='linear'):
     if isinstance(xerr,(int,float)):
         xerr = np.full(len(x),xerr)
     if isinstance(yerr,(int,float)):
@@ -98,9 +139,13 @@ def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,beta0=[1,1],tol=1,xscale='
     yerrTrue = yerr[abs(res) < stdy]
     xerrTrue = xerr[abs(res) < stdy]
 
-    adjustFinal = plotFinal(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,beta0,xscale,yscale)
-    finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel)
-    return adjustFinal
+    if separate:
+        adjustFinal = plotFinal(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,beta0,xscale,yscale)
+        finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel)
+        return adjustFinal
+    else:
+        adjustFinal = plotFinalwResidues(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,adjust,stdy,beta0,xscale,yscale)
+        return adjustFinal
 
 
 def plotColumnFullLinReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,beta0=[1,1],tol=1):
