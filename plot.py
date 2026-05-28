@@ -63,7 +63,7 @@ def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale
     plt.show()
     return adjust
 
-def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,stdy,beta0=[1,1],xscale='linear',yscale='linear',s=5):
+def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,stdy,beta0=[1,1],xscale='linear',yscale='linear',s=5,tol=1):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
     adjust = getAdjust(lin, x1, y1, xerr1, yerr1,beta0)
@@ -89,10 +89,11 @@ def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,s
     resTrue = y1 - x1*adjust1.beta[0] - adjust1.beta[1]
     resFalse = yres - xres*adjust1.beta[0] - adjust1.beta[1]
     ax2.axhline(0,c="red")
-    ax2.axhline(stdy,c="orange")
+    ax2.axhline(stdy,c="orange", label=f"Intervalo de {tol}σ")
     ax2.axhline(-stdy,c="orange")
     ax2.scatter(x1,resTrue, c="black", s=s)
     ax2.grid(axis="x")
+    ax2.legend()
     if len(xres) != 0:
         ax2.scatter(xres,resFalse,c="red", s=s)
 
@@ -144,7 +145,7 @@ def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,separate = True, beta0=[1,
         finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel,s)
         return adjustFinal
     else:
-        adjustFinal = plotFinalwResidues(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,adjust,stdy,beta0,xscale,yscale,s)
+        adjustFinal = plotFinalwResidues(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,adjust,stdy,beta0,xscale,yscale,s,tol)
         return adjustFinal
 
 
