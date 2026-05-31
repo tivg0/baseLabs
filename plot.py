@@ -3,6 +3,8 @@ import numpy as np
 from .functions import *
 from .operations import *
 
+plt.rcParams['errorbar.capsize'] = 4
+
 
 def plotLinReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
     plt.figure(figsize=(12,8))
@@ -275,7 +277,7 @@ def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Ponto
     return regs
 
 
-def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=1):
+def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,perslabel=False,beta0=[1,1],tol=1):
 
 
     fig, axs = plt.subplots(len(xs),2,figsize=(18,len(xs)*7))
@@ -329,7 +331,13 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
             x = np.linspace(min(min(xTrue),min(xFalse)), max(max(xTrue),max(xFalse)),100)
 
         y = func(adjustTrue.beta, x)
-        ax.plot(x,y, c="orange", label=getPolynomialLabel2(adjustTrue.beta,adjustTrue.sd_beta, xlabel,ylabel))
+
+        if perslabel!=False:
+            L=perslabel[i]
+        else:
+            L=getPolynomialLabel2(adjustTrue.beta,adjustTrue.sd_beta, xlabel,ylabel)
+
+        ax.plot(x,y, c="orange", label=L)
         if len(xFalse) != 0:
             ax.plot(xFalse,yFalse, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
 
