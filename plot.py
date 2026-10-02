@@ -248,7 +248,7 @@ def plotColumnFullLinReg(datasets, tol=1):
     return adjusts
 
 
-def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regressions=False, xscale='linear', yscale='linear', errorbars=True, tol=1):
+def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regressions=False, tol=1, xscale='linear', yscale='linear', errorbars=True):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
     regs = np.zeros([len(datasets)], dtype=object)
 
