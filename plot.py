@@ -169,6 +169,7 @@ def fullLinAnalysis(dataset, separate=True, tol=1, xscale='linear', yscale='line
     yerrTrue = yerr[abs(res) <= stdy_thresh]
     xerrTrue = xerr[abs(res) <= stdy_thresh]
 
+
     dataset_true = DataSet(xTrue, yTrue, xerrTrue, yerrTrue, title, xlabel, ylabel, dataset.fit_type)
 
     if separate:
@@ -247,8 +248,8 @@ def plotColumnFullLinReg(datasets, tol=1):
     return adjusts
 
 
-def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regressions=False, xscale='linear', yscale='linear', errorbars=True):
-    plt.figure(figsize=(12,8))
+def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regressions=False, xscale='linear', yscale='linear', errorbars=True, tol=1):
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
     regs = np.zeros([len(datasets)], dtype=object)
 
     if legends == "Pontos Experimentais":
@@ -256,6 +257,8 @@ def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regression
 
     first_ds = datasets[0]
     title, xlabel, ylabel = first_ds.titulo, first_ds.labelx, first_ds.labely
+
+    ax2.axhline(0, c="red")
 
     for i in range(len(datasets)):
         ds = datasets[i]
@@ -269,21 +272,41 @@ def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regression
         regs[i] = adjust
 
         if errorbars:
-            plt.errorbar(x, y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
+            ax1.errorbar(x, y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
         else:
-            plt.scatter(x, y, c=color, label=legends[i])
+            ax1.scatter(x, y, c=color, label=legends[i])
+
         xLin = np.linspace(np.min(x), np.max(x), 50)
         yLin = ds.fit_type(adjust.beta, xLin)
         if regressions:
-            plt.plot(xLin, yLin, c=color, label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel))
+            ax1.plot(xLin, yLin, c=color, label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel))
 
-    plt.title(title)
-    plt.xlabel(rf"${xlabel}$")
-    plt.ylabel(rf"${ylabel}$")
-    plt.xscale(xscale)
-    plt.yscale(yscale)
-    plt.legend()
-    plt.grid()
+        res = y - ds.fit_type(adjust.beta, x)
+        if errorbars:
+            ax2.errorbar(x, res, yerr=yerr, c=color, fmt="o")
+        else:
+            ax2.scatter(x, res, c=color)
+
+        if tol is not None and tol > 0:
+            stdy = np.std(res) * tol
+            label_sig = f"Intervalo de {tol}σ ({legends[i]})" if len(datasets) > 1 else f"Intervalo de {tol}σ"
+            ax2.axhline(stdy, c=color, label=label_sig)
+            ax2.axhline(-stdy, c=color)
+
+    ax1.set_title(rf"${title}$")
+    ax1.set_ylabel(rf"${ylabel}$")
+    ax1.set_xscale(xscale)
+    ax1.set_yscale(yscale)
+    ax1.legend()
+    ax1.grid()
+
+    ax2.set_xlabel(rf"${xlabel}$")
+    ax2.set_ylabel(rf"Resíduos ${ylabel}$")
+    ax2.grid()
+    if tol is not None and tol > 0:
+        ax2.legend()
+
+    plt.subplots_adjust(hspace=0)
     plt.show()
 
     return regs

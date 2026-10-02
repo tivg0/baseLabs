@@ -192,3 +192,6 @@ def getSignAlg(xs, uxs=None):
             xs_arr[i] = round(xs_arr[i], e)
 
     return [xs_arr, uxs_arr]
+
+def fucknan(arr):
+    return arr[~np.isnan(arr)]
