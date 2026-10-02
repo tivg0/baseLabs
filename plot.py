@@ -290,8 +290,8 @@ def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regression
         if tol is not None and tol > 0:
             stdy = np.std(res) * tol
             label_sig = f"Intervalo de {tol}σ ({legends[i]})" if len(datasets) > 1 else f"Intervalo de {tol}σ"
-            ax2.axhline(stdy, c=color, label=label_sig)
-            ax2.axhline(-stdy, c=color)
+            ax2.axhline(stdy, c=color, label=label_sig, alpha=0.5)
+            ax2.axhline(-stdy, c=color, alpha=0.5)
 
     ax1.set_title(rf"${title}$")
     ax1.set_ylabel(rf"${ylabel}$")
