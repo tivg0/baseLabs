@@ -1,57 +1,70 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from .functions import *
-from .operations import *
+
+try:
+    from .functions import *
+    from .operations import *
+    from .dataset import DataSet
+except ImportError:
+    from functions import *
+    from operations import *
+    from dataset import DataSet
 
 
-def plotLinReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
+def plotLinReg(dataset):
     plt.figure(figsize=(12,8))
-    plt.errorbar(xs,ys, xerr=xerr, yerr=yerr, c="black", fmt="o")
+    plt.errorbar(dataset.x, dataset.y, xerr=dataset.ux, yerr=dataset.uy, c="black", fmt="o")
 
-    adjust = getAdjust(lin, xs, ys, xerr, yerr)
-    x = np.linspace(min(xs), max(xs),100)
-    y = lin(adjust.beta, x)
-    plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta,xlabel,ylabel))
+    adjust = dataset.adjust
+    x = np.linspace(min(dataset.x), max(dataset.x), 100)
+    y = dataset.fit_type(adjust.beta, x)
+    plt.plot(x, y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, dataset.labelx, dataset.labely))
 
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.title(dataset.titulo)
+    plt.xlabel(dataset.labelx)
+    plt.ylabel(dataset.labely)
     plt.legend(fontsize='12')
     plt.grid()
     plt.show()
     return adjust
 
-def plotQuadReg(xs,ys,xerr,yerr,title,xlabel,ylabel):
+
+def plotQuadReg(dataset):
     plt.figure(figsize=(12,8))
-    plt.errorbar(xs,ys, xerr=xerr, yerr=yerr, c="black", fmt="o")
+    plt.errorbar(dataset.x, dataset.y, xerr=dataset.ux, yerr=dataset.uy, c="black", fmt="o")
 
-    adjust = getAdjust(quadratic, xs, ys, xerr, yerr,[1,1,1])
-    x = np.linspace(min(xs), max(xs),100)
-    y = quadratic(adjust.beta, x)
-    plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta,xlabel,ylabel))
+    adjust = dataset.adjust
+    x = np.linspace(min(dataset.x), max(dataset.x), 100)
+    y = dataset.fit_type(adjust.beta, x)
+    plt.plot(x, y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, dataset.labelx, dataset.labely))
 
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.title(dataset.titulo)
+    plt.xlabel(dataset.labelx)
+    plt.ylabel(dataset.labely)
     plt.legend(fontsize='12')
     plt.grid()
     plt.show()
     return adjust
 
-def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale='linear',yscale='linear',s=5):
+
+def plotFinal(dataset, xres=[], yres=[], xscale='linear', yscale='linear', s=5):
     plt.figure(figsize=(12,8))
-    adjust = getAdjust(lin, x1, y1, xerr1, yerr1,beta0)
+    adjust = dataset.adjust
+    x1, y1 = dataset.x, dataset.y
+    xerr1, yerr1 = dataset.ux, dataset.uy
+    title, xlabel, ylabel = dataset.titulo, dataset.labelx, dataset.labely
+
     if len(xres) == 0:
-        x = np.linspace(min(x1), max(x1),100)
+        x = np.linspace(min(x1), max(x1), 100)
     else:
-        x = np.linspace(min(min(x1),min(xres)), max(max(x1),max(xres)),100)
+        x = np.linspace(min(min(x1), min(xres)), max(max(x1), max(xres)), 100)
     
-    y = lin(adjust.beta, x)
-    plt.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel),zorder=3)
-    plt.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais",zorder=2,markersize=s)
+    y = dataset.fit_type(adjust.beta, x)
+    plt.plot(x, y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel), zorder=3)
+    plt.errorbar(x1, y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais", zorder=2, markersize=s)
 
     if len(xres) != 0:
-        plt.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",zorder=1,markersize=s)
+        plt.plot(xres, yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados", zorder=1, markersize=s)
 
     plt.title(rf"${title}$")
     plt.xlabel(rf"${xlabel}$")
@@ -63,21 +76,28 @@ def plotFinal(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,beta0=[1,1],xscale
     plt.show()
     return adjust
 
-def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,stdy,beta0=[1,1],xscale='linear',yscale='linear',s=5,tol=1):
 
+def plotFinalwResidues(dataset, xres=[], yres=[], adjust1=None, stdy=0, xscale='linear', yscale='linear', s=5, tol=1):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
-    adjust = getAdjust(lin, x1, y1, xerr1, yerr1,beta0)
+    adjust = dataset.adjust
+    if adjust1 is None:
+        adjust1 = adjust
+
+    x1, y1 = dataset.x, dataset.y
+    xerr1, yerr1 = dataset.ux, dataset.uy
+    title, xlabel, ylabel = dataset.titulo, dataset.labelx, dataset.labely
+
     if len(xres) == 0:
-        x = np.linspace(min(x1), max(x1),100)
+        x = np.linspace(min(x1), max(x1), 100)
     else:
-        x = np.linspace(min(min(x1),min(xres)), max(max(x1),max(xres)),100)
+        x = np.linspace(min(min(x1), min(xres)), max(max(x1), max(xres)), 100)
     
-    y = lin(adjust.beta, x)
-    ax1.plot(x,y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel),zorder=3)
-    ax1.errorbar(x1,y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais",zorder=2, markersize=s)
+    y = dataset.fit_type(adjust.beta, x)
+    ax1.plot(x, y, c="orange", label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel), zorder=3)
+    ax1.errorbar(x1, y1, xerr=xerr1, yerr=yerr1, c="black", fmt="o", label="Pontos Experimentais", zorder=2, markersize=s)
 
     if len(xres) != 0:
-        ax1.plot(xres,yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",zorder=1, markersize=s)
+        ax1.plot(xres, yres, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados", zorder=1, markersize=s)
 
     ax1.set_title(rf"${title}$")
     ax1.set_ylabel(rf"${ylabel}$")
@@ -86,16 +106,16 @@ def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,s
     ax1.legend()
     ax1.grid()
 
-    resTrue = y1 - x1*adjust1.beta[0] - adjust1.beta[1]
-    resFalse = yres - xres*adjust1.beta[0] - adjust1.beta[1]
-    ax2.axhline(0,c="red")
-    ax2.axhline(stdy,c="orange", label=f"Intervalo de {tol}σ")
-    ax2.axhline(-stdy,c="orange")
-    ax2.scatter(x1,resTrue, c="black", s=s)
+    resTrue = y1 - x1 * adjust1.beta[0] - adjust1.beta[1]
+    resFalse = np.array(yres) - np.array(xres) * adjust1.beta[0] - adjust1.beta[1] if len(xres) > 0 else []
+    ax2.axhline(0, c="red")
+    ax2.axhline(stdy, c="orange", label=f"Intervalo de {tol}σ")
+    ax2.axhline(-stdy, c="orange")
+    ax2.scatter(x1, resTrue, c="black", s=s)
     ax2.grid(axis="x")
     ax2.legend()
     if len(xres) != 0:
-        ax2.scatter(xres,resFalse,c="red", s=s)
+        ax2.scatter(xres, resFalse, c="red", s=s)
 
     ax2.set_xlabel(rf"${xlabel}$")
     ax2.set_ylabel(rf"Resíduos ${ylabel}$")
@@ -104,104 +124,101 @@ def plotFinalwResidues(x1,y1,xres,yres,xerr1,yerr1,title,xlabel,ylabel,adjust1,s
     plt.show()
     return adjust
 
-def finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel,s):
-    resTrue = yTrue - xTrue*adjust.beta[0] - adjust.beta[1]
-    resFalse = yFalse - xFalse*adjust.beta[0] - adjust.beta[1]
+
+def finalResidues(dataset, xFalse=[], yFalse=[], stdy=0, s=5):
+    xTrue, yTrue = dataset.x, dataset.y
+    adjust = dataset.adjust
+    xlabel, ylabel = dataset.labelx, dataset.labely
+
+    resTrue = yTrue - xTrue * adjust.beta[0] - adjust.beta[1]
+    resFalse = np.array(yFalse) - np.array(xFalse) * adjust.beta[0] - adjust.beta[1] if len(xFalse) > 0 else []
 
     plt.figure(figsize=(12,8))
     plt.axhline(0, c="black", alpha=0.5)
     plt.axhline(stdy, c="orange", label="Intervalo {} Desvio Padrão".format(stdy))
     plt.axhline(-stdy, c="orange")
-    plt.plot(xTrue,resTrue,c="black", marker="o", ls="", label="Pontos Experimentais",s=s)
-    plt.plot(xFalse,resFalse,c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados",s=s)
+    plt.scatter(xTrue, resTrue, c="black", label="Pontos Experimentais", s=s)
+    if len(xFalse) > 0:
+        plt.scatter(xFalse, resFalse, c="red", label="Pontos Experimentais Rejeitados", s=s)
     plt.xlabel(rf'${xlabel}$')
     plt.ylabel(rf"$Res$ {ylabel}")
     plt.title("Resíduos E")
     plt.legend()
     plt.show()
 
-def fullLinAnalysis(x,y,xerr,yerr,title,xlabel,ylabel,separate = True, beta0=[1,1],tol=1,xscale='linear',yscale='linear',s=5):
-    if isinstance(xerr,(int,float)):
-        xerr = np.full(len(x),xerr)
-    if isinstance(yerr,(int,float)):
-        yerr = np.full(len(y),yerr)
-    adjust = getAdjust(lin,x,y,xerr,yerr,beta0)
 
-    res = y - x*adjust.beta[0] - adjust.beta[1]
+def fullLinAnalysis(dataset, separate=True, tol=1, xscale='linear', yscale='linear', s=5):
+    x, y = dataset.x, dataset.y
+    xerr, yerr = dataset.ux, dataset.uy
+    title, xlabel, ylabel = dataset.titulo, dataset.labelx, dataset.labely
+    
+    adjust = dataset.adjust
 
-    stdy = np.std(res)*tol
+    res = y - x * adjust.beta[0] - adjust.beta[1]
+    stdy = np.std(res) * tol
 
-    yTrue = y[abs(res) < stdy]
-    yFalse = y[abs(res) > stdy]
+    stdy_thresh = max(stdy, 1e-12)
+    yTrue = y[abs(res) <= stdy_thresh]
+    yFalse = y[abs(res) > stdy_thresh]
 
-    xTrue = x[abs(res) < stdy]
-    xFalse = x[abs(res) > stdy]
+    xTrue = x[abs(res) <= stdy_thresh]
+    xFalse = x[abs(res) > stdy_thresh]
 
-    yerrTrue = yerr[abs(res) < stdy]
-    xerrTrue = xerr[abs(res) < stdy]
+    yerrTrue = yerr[abs(res) <= stdy_thresh]
+    xerrTrue = xerr[abs(res) <= stdy_thresh]
+
+    dataset_true = DataSet(xTrue, yTrue, xerrTrue, yerrTrue, title, xlabel, ylabel, dataset.fit_type)
 
     if separate:
-        adjustFinal = plotFinal(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,beta0,xscale,yscale,s)
-        finalResidues(xTrue,yTrue,xFalse,yFalse,adjust,stdy,xlabel, ylabel,s)
+        adjustFinal = plotFinal(dataset_true, xFalse, yFalse, xscale=xscale, yscale=yscale, s=s)
+        finalResidues(dataset_true, xFalse, yFalse, stdy, s=s)
         return adjustFinal
     else:
-        adjustFinal = plotFinalwResidues(xTrue,yTrue,xFalse,yFalse,xerrTrue,yerrTrue,title,xlabel,ylabel,adjust,stdy,beta0,xscale,yscale,s,tol)
+        adjustFinal = plotFinalwResidues(dataset_true, xFalse, yFalse, adjust1=adjust, stdy=stdy, xscale=xscale, yscale=yscale, s=s, tol=tol)
         return adjustFinal
 
 
-def plotColumnFullLinReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,beta0=[1,1],tol=1):
-
-    fig, axs = plt.subplots(len(xs),2,figsize=(18,len(xs)*7))
+def plotColumnFullLinReg(datasets, tol=1):
+    fig, axs = plt.subplots(len(datasets), 2, figsize=(18, len(datasets) * 7))
     fig.subplots_adjust(hspace=0.3, wspace=0.3)
-    axsIter = iter(axs.flat)
+    axsIter = iter(axs.flat) if hasattr(axs, 'flat') else iter([axs[0], axs[1]])
     adjusts = []
 
-    if isinstance(xlabels, str):
-        xlabels = [xlabels] * len(xs)
-    if isinstance(ylabels, str):
-        ylabels = [ylabels] * len(xs)
-
-    for i in range(0,len(xs)):
-        x=xs[i]
-        y=ys[i]
-        xerr=xerrs[i]
-        yerr=yerrs[i]
-        title = titles[i]
-        xlabel = xlabels[i]
-        ylabel = ylabels[i]
+    for ds in datasets:
+        x, y = ds.x, ds.y
+        xerr, yerr = ds.ux, ds.uy
+        title, xlabel, ylabel = ds.titulo, ds.labelx, ds.labely
+        
         ax = next(axsIter)
+        adjust = ds.adjust
 
-        if isinstance(xerr,(int,float)):
-            xerr = np.full(len(x),xerr)
-        if isinstance(yerr,(int,float)):
-            yerr = np.full(len(y),yerr)
-        adjust = getAdjust(lin,x,y,xerr,yerr,beta0)
+        res = y - x * adjust.beta[0] - adjust.beta[1]
+        stdy = np.std(res) * tol
 
-        res = y - x*adjust.beta[0] - adjust.beta[1]
+        stdy_thresh = max(stdy, 1e-12)
+        yTrue = y[abs(res) <= stdy_thresh]
+        yFalse = y[abs(res) > stdy_thresh]
 
-        stdy = np.std(res)*tol
+        xTrue = x[abs(res) <= stdy_thresh]
+        xFalse = x[abs(res) > stdy_thresh]
 
-        yTrue = y[abs(res) < stdy]
-        yFalse = y[abs(res) > stdy]
+        yerrTrue = yerr[abs(res) <= stdy_thresh]
+        xerrTrue = xerr[abs(res) <= stdy_thresh]
 
-        xTrue = x[abs(res) < stdy]
-        xFalse = x[abs(res) > stdy]
-
-        yerrTrue = yerr[abs(res) < stdy]
-        xerrTrue = xerr[abs(res) < stdy]
-
-        ax.errorbar(xTrue,yTrue, xerr=xerrTrue, yerr=yerrTrue, c="black", fmt="o", label="Pontos Experimentais")
-        adjustTrue = getAdjust(lin, xTrue, yTrue, xerrTrue, yerrTrue,beta0)
+        ax.errorbar(xTrue, yTrue, xerr=xerrTrue, yerr=yerrTrue, c="black", fmt="o", label="Pontos Experimentais")
+        ds_true = DataSet(xTrue, yTrue, xerrTrue, yerrTrue, title, xlabel, ylabel, ds.fit_type)
+        adjustTrue = ds_true.adjust
         adjusts.append(adjustTrue)
-        if len(xFalse) == 0:
-            x = np.linspace(min(xTrue), max(xTrue),100)
-        else:
-            x = np.linspace(min(min(xTrue),min(xFalse)), max(max(xTrue),max(xFalse)),100)
 
-        y = lin(adjustTrue.beta, x)
-        ax.plot(x,y, c="orange", label=getPolynomialLabel2(adjustTrue.beta,adjustTrue.sd_beta, xlabel,ylabel))
+        if len(xFalse) == 0:
+            x_plot = np.linspace(min(xTrue), max(xTrue), 100)
+        else:
+            x_plot = np.linspace(min(min(xTrue), min(xFalse)), max(max(xTrue), max(xFalse)), 100)
+
+        y_plot = ds.fit_type(adjustTrue.beta, x_plot)
+        ax.plot(x_plot, y_plot, c="orange", label=getPolynomialLabel2(adjustTrue.beta, adjustTrue.sd_beta, xlabel, ylabel))
         if len(xFalse) != 0:
-            ax.plot(xFalse,yFalse, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
+            ax.plot(xFalse, yFalse, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
 
         ax.set_title(rf"${title}$")
         ax.set_xlabel(rf"${xlabel}$")
@@ -211,14 +228,14 @@ def plotColumnFullLinReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,beta0=[1,1],to
 
         ax = next(axsIter)
 
-        resTrue = yTrue - xTrue*adjust.beta[0] - adjust.beta[1]
-        resFalse = yFalse - xFalse*adjust.beta[0] - adjust.beta[1]
+        resTrue = yTrue - xTrue * adjust.beta[0] - adjust.beta[1]
+        resFalse = yFalse - xFalse * adjust.beta[0] - adjust.beta[1]
 
         ax.axhline(0, c="black", alpha=0.5)
-        ax.axhline(stdy, c="orange", label="Intervalo {}$\sigma$".format(tol))
+        ax.axhline(stdy, c="orange", label=f"Intervalo {tol}$\\sigma$")
         ax.axhline(-stdy, c="orange")
-        ax.plot(xTrue,resTrue,c="black", marker="o", ls="", label="Pontos Experimentais")
-        ax.plot(xFalse,resFalse,c="red", marker="o", ls="", label="Pontos Rejeitados")
+        ax.plot(xTrue, resTrue, c="black", marker="o", ls="", label="Pontos Experimentais")
+        ax.plot(xFalse, resFalse, c="red", marker="o", ls="", label="Pontos Rejeitados")
         ax.set_xlabel(rf'${xlabel}$')
         ax.set_ylabel(rf"$Res \quad {ylabel}$")
         ax.set_title(fr"$Resíduos \quad {ylabel.split('(')[0]}$")
@@ -227,41 +244,36 @@ def plotColumnFullLinReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,beta0=[1,1],to
         
     return adjusts
 
-def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Pontos Experimentais",regressions=False,beta0=[1,1],xscale='linear',yscale='linear', errorbars= True):
+
+def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regressions=False, xscale='linear', yscale='linear', errorbars=True):
     plt.figure(figsize=(12,8))
-    regs = np.zeros([len(xs)],dtype=object)
+    regs = np.zeros([len(datasets)], dtype=object)
 
     if legends == "Pontos Experimentais":
-        legends = ["Pontos Experimentais"] * len(xs)
+        legends = ["Pontos Experimentais"] * len(datasets)
 
-    for i in range(0,len(xs)):
-        x = xs[i]
-        y = ys[i]
+    first_ds = datasets[0]
+    title, xlabel, ylabel = first_ds.titulo, first_ds.labelx, first_ds.labely
+
+    for i in range(len(datasets)):
+        ds = datasets[i]
+        x = ds.x[~np.isnan(ds.x)]
+        y = ds.y[~np.isnan(ds.y)]
+        xerr = ds.ux[~np.isnan(ds.x)]
+        yerr = ds.uy[~np.isnan(ds.y)]
         color = colors[i]
 
-        x = x[~np.isnan(x)]
-        y = y[~np.isnan(y)]
-
-        if isinstance(xerrs,(int,float)):
-            xerr = np.full(len(x),xerrs)
-        else:
-            xerr = xerrs[i]
-        if isinstance(yerrs,(int,float)):
-            yerr = np.full(len(y),yerrs)
-        else:
-            yerr = yerrs[i]
-
-        adjust = getAdjust(lin,x,y,xerr,yerr,beta0)
+        adjust = ds.adjust
         regs[i] = adjust
 
         if errorbars:
-            plt.errorbar(x,y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
+            plt.errorbar(x, y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
         else:
-            plt.scatter(x,y, c=color, label=legends[i])
-        xLin = np.linspace(np.min(x),np.max(x),50)
-        yLin = lin(adjust.beta, xLin)
+            plt.scatter(x, y, c=color, label=legends[i])
+        xLin = np.linspace(np.min(x), np.max(x), 50)
+        yLin = ds.fit_type(adjust.beta, xLin)
         if regressions:
-            plt.plot(xLin,yLin, c=color, label=getPolynomialLabel2(adjust.beta,adjust.sd_beta, xlabel,ylabel))
+            plt.plot(xLin, yLin, c=color, label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel))
 
     plt.title(title)
     plt.xlabel(rf"${xlabel}$")
@@ -275,63 +287,47 @@ def plotMultipleReg(xs,ys,xerrs,yerrs,title, xlabel,ylabel,colors,legends="Ponto
     return regs
 
 
-def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=1):
-
-
-    fig, axs = plt.subplots(len(xs),2,figsize=(18,len(xs)*7))
+def plotColumnReg(datasets, tol=1):
+    fig, axs = plt.subplots(len(datasets), 2, figsize=(18, len(datasets) * 7))
     fig.subplots_adjust(hspace=0.3, wspace=0.3)
-    axsIter = iter(axs.flat)
+    axsIter = iter(axs.flat) if hasattr(axs, 'flat') else iter([axs[0], axs[1]])
     adjusts = []
 
-    if isinstance(xlabels, str):
-        xlabels = [xlabels] * len(xs)
-    if isinstance(ylabels, str):
-        ylabels = [ylabels] * len(xs)
-
-
-    for i in range(0,len(xs)):
-        x=xs[i]
-        y=ys[i]
-        xerr=xerrs[i]
-        yerr=yerrs[i]
-        title = titles[i]
-        xlabel = xlabels[i]
-        ylabel = ylabels[i]
+    for ds in datasets:
+        x, y = ds.x, ds.y
+        xerr, yerr = ds.ux, ds.uy
+        title, xlabel, ylabel = ds.titulo, ds.labelx, ds.labely
+        func = ds.fit_type
         ax = next(axsIter)
 
+        adjust = ds.adjust
+        res = y - x * adjust.beta[0] - adjust.beta[1]
+        stdy = np.std(res) * tol
 
-        if isinstance(xerr,(int,float)):
-            xerr = np.full(len(x),xerr)
-        if isinstance(yerr,(int,float)):
-            yerr = np.full(len(y),yerr)
+        stdy_thresh = max(stdy, 1e-12)
+        yTrue = y[abs(res) <= stdy_thresh]
+        yFalse = y[abs(res) > stdy_thresh]
 
-        adjust = getAdjust(func,x,y,xerr,yerr,beta0)
+        xTrue = x[abs(res) <= stdy_thresh]
+        xFalse = x[abs(res) > stdy_thresh]
 
-        res = y - x*adjust.beta[0] - adjust.beta[1]
+        yerrTrue = yerr[abs(res) <= stdy_thresh]
+        xerrTrue = xerr[abs(res) <= stdy_thresh]
 
-        stdy = np.std(res)*tol
-
-        yTrue = y[abs(res) < stdy]
-        yFalse = y[abs(res) > stdy]
-
-        xTrue = x[abs(res) < stdy]
-        xFalse = x[abs(res) > stdy]
-
-        yerrTrue = yerr[abs(res) < stdy]
-        xerrTrue = xerr[abs(res) < stdy]
-
-        ax.errorbar(xTrue,yTrue, xerr=xerrTrue, yerr=yerrTrue, c="black", fmt="o", label="Pontos Experimentais")
-        adjustTrue = getAdjust(func, xTrue, yTrue, xerrTrue, yerrTrue,beta0)
+        ax.errorbar(xTrue, yTrue, xerr=xerrTrue, yerr=yerrTrue, c="black", fmt="o", label="Pontos Experimentais")
+        ds_true = DataSet(xTrue, yTrue, xerrTrue, yerrTrue, title, xlabel, ylabel, func)
+        adjustTrue = ds_true.adjust
         adjusts.append(adjustTrue)
-        if len(xFalse) == 0:
-            x = np.linspace(min(xTrue), max(xTrue),100)
-        else:
-            x = np.linspace(min(min(xTrue),min(xFalse)), max(max(xTrue),max(xFalse)),100)
 
-        y = func(adjustTrue.beta, x)
-        ax.plot(x,y, c="orange", label=getPolynomialLabel2(adjustTrue.beta,adjustTrue.sd_beta, xlabel,ylabel))
+        if len(xFalse) == 0:
+            x_plot = np.linspace(min(xTrue), max(xTrue), 100)
+        else:
+            x_plot = np.linspace(min(min(xTrue), min(xFalse)), max(max(xTrue), max(xFalse)), 100)
+
+        y_plot = func(adjustTrue.beta, x_plot)
+        ax.plot(x_plot, y_plot, c="orange", label=getPolynomialLabel2(adjustTrue.beta, adjustTrue.sd_beta, xlabel, ylabel))
         if len(xFalse) != 0:
-            ax.plot(xFalse,yFalse, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
+            ax.plot(xFalse, yFalse, c="red", marker="o", ls="", label="Pontos Experimentais Rejeitados")
 
         ax.set_title(rf"${title}$")
         ax.set_xlabel(rf"${xlabel}$")
@@ -341,14 +337,14 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
 
         ax = next(axsIter)
 
-        resTrue = yTrue - xTrue*adjust.beta[0] - adjust.beta[1]
-        resFalse = yFalse - xFalse*adjust.beta[0] - adjust.beta[1]
+        resTrue = yTrue - xTrue * adjust.beta[0] - adjust.beta[1]
+        resFalse = yFalse - xFalse * adjust.beta[0] - adjust.beta[1]
 
         ax.axhline(0, c="black", alpha=0.5)
-        ax.axhline(stdy, c="orange", label="Intervalo {}$\sigma$".format(tol))
+        ax.axhline(stdy, c="orange", label=f"Intervalo {tol}$\\sigma$")
         ax.axhline(-stdy, c="orange")
-        ax.plot(xTrue,resTrue,c="black", marker="o", ls="", label="Pontos Experimentais")
-        ax.plot(xFalse,resFalse,c="red", marker="o", ls="", label="Pontos Rejeitados")
+        ax.plot(xTrue, resTrue, c="black", marker="o", ls="", label="Pontos Experimentais")
+        ax.plot(xFalse, resFalse, c="red", marker="o", ls="", label="Pontos Rejeitados")
         ax.set_xlabel(rf'${xlabel}$')
         ax.set_ylabel(rf"$Res \quad {ylabel}$")
         ax.set_title(fr"$Resíduos \quad {ylabel.split('(')[0]}$")
@@ -357,21 +353,21 @@ def plotColumnReg(xs,ys,xerrs,yerrs,titles,xlabels,ylabels,func,beta0=[1,1],tol=
         
     return adjusts
 
-def plot(xs,ys,xerrs=None,yerrs=None,title="Título",xlabel="x",ylabel="y", label="Dados", color="black",hlines=None):
+
+def plot(dataset, label="Dados", color="black", hlines=None):
     plt.figure(figsize=(12,8))
-    if (xerrs == None).all() and (yerrs == None).all():
-        plt.scatter(xs,ys,c=color, label=label)
+    if dataset.ux is None and dataset.uy is None:
+        plt.scatter(dataset.x, dataset.y, c=color, label=label)
     else:
-        plt.errorbar(xs,ys,xerr=xerrs,yerr=yerrs, fmt="o", c=color, label=label)
+        plt.errorbar(dataset.x, dataset.y, xerr=dataset.ux, yerr=dataset.uy, fmt="o", c=color, label=label, capsize=4)
 
-    if hlines != None:
+    if hlines is not None:
         for i in hlines:
-            plt.axhline(i[0],color="red",label=i[1])
+            plt.axhline(i[0], color="red", label=i[1])
 
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.title(dataset.titulo)
+    plt.xlabel(dataset.labelx)
+    plt.ylabel(dataset.labely)
     plt.legend()
     plt.grid()
     plt.show()
-    

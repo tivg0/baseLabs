@@ -9,10 +9,11 @@ Uma biblioteca Python desenvolvida para apoiar a análise de dados experimentais
 ```
 labs2-starter-pack/
 │
-├── __init__.py           # Módulo principal (re-exporta funções de functions.py, operations.py e plot.py)
-├── functions.py      # Funções matemáticas para ajustes/regressões
-├── operations.py     # Operações de dados, ajustes ODR e utilitários
-├── plot.py           # Funções de visualização e análise gráfica
+├── __init__.py      # Módulo principal (re-exporta DataSet, functions.py, operations.py e plot.py)
+├── dataset.py       # Classe DataSet para gestão de dados, rótulos e ajustes automáticos
+├── functions.py     # Funções matemáticas para ajustes/regressões
+├── operations.py    # Operações de dados, ajustes ODR e utilitários
+├── plot.py          # Funções de visualização e análise gráfica
 ```
 
 ---
@@ -22,345 +23,112 @@ labs2-starter-pack/
 Coloca os ficheiros do repositório na mesma pasta que o teu notebook `.ipynb`. Depois importa o módulo principal:
 
 ```python
-from labs-starter-pack import *
+from baseLabs import *
 ```
 
-O módulo `labs-starter-pack` agrega automaticamente todas as funções de `functions.py`, `operations.py` e `plot.py`, pelo que é o único import necessário para aceder a tudo.
+---
 
-Se quiseres importar os módulos individualmente:
+## 📦 `dataset.py` — Classe `DataSet`
+
+A classe `DataSet` encapsula os dados experimentais, incertezas, títulos, rótulos de eixos e o tipo de ajuste a realizar. Ao ser instanciada, **os parâmetros do ajuste são automaticamente calculados** através de SciPy ODR e guardados no atributo `adjust`.
+
+### Assinatura do Construtor
 
 ```python
-import functions as f
-import operations as op
-import plot as p
+DataSet(x, y, ux, uy, titulo, labelx, labely, fit_type=lin)
 ```
 
-> **Nota:** Certifica-te de que tens instaladas as dependências necessárias:
-> ```bash
-> pip install numpy matplotlib scipy
-> ```
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `x`, `y`  | `list` ou `array` | Dados experimentais (variáveis independente e dependente) |
+| `ux`, `uy` | `float` ou `array` | Incertezas experimentais em x e y |
+| `titulo`  | `str` | Título do gráfico |
+| `labelx`  | `str` | Rótulo do eixo X |
+| `labely`  | `str` | Rótulo do eixo Y |
+| `fit_type`| `function` | Função modelo de ajuste (default: `lin` de `functions.py`) |
+
+### Atributos Principais
+
+- `ds.x`, `ds.y`: Arrays NumPy dos dados.
+- `ds.ux`, `ds.uy`: Arrays NumPy das incertezas (escalares são expandidos automaticamente).
+- `ds.titulo`, `ds.labelx`, `ds.labely`: Rótulos e título.
+- `ds.fit_type`: Função utilizada no ajuste (ex: `lin`, `quadratic`).
+- `ds.adjust`: Objeto de output retornado pelo SciPy ODR (`odr.run()`), contendo `ds.adjust.beta` e `ds.adjust.sd_beta`.
+
+### Exemplo de Criação
+
+```python
+ds = DataSet(
+    x=[1, 2, 3, 4, 5],
+    y=[2.1, 3.9, 6.1, 8.2, 9.8],
+    ux=0.1,
+    uy=0.2,
+    titulo="Posição em Função do Tempo",
+    labelx="t (s)",
+    labely="x (m)",
+    fit_type=lin
+)
+
+# Acesso direto ao ajuste pré-calculado:
+print("Declive e ordenada na origem:", ds.adjust.beta)
+```
 
 ---
 
 ## 📐 `functions.py` — Funções Matemáticas
 
-Este ficheiro define as funções matemáticas utilizadas como modelos nos ajustes por regressão. São passadas como argumento a funções como `getAdjust`.
-
----
+Este ficheiro define as funções matemáticas utilizadas como modelos nos ajustes por regressão.
 
 ### `lin(coefs, x)`
-
-Calcula uma função **linear**.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `coefs`   | `list` | Lista com 2 coeficientes: `[m, b]` |
-| `x`       | `float` ou `array` | Valor(es) da variável independente |
-
-**Output:** `coefs[0]*x + coefs[1]`
-
-```python
-lin([2, 1], 3)  # → 7
-```
-
----
+Calcula uma função **linear** (`coefs[0]*x + coefs[1]`).
 
 ### `quadratic(coefs, x)`
-
-Calcula uma função **quadrática**.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `coefs`   | `list` | Lista com 3 coeficientes: `[a, b, c]` |
-| `x`       | `float` ou `array` | Valor(es) da variável independente |
-
-**Output:** `coefs[0]*x² + coefs[1]*x + coefs[2]`
-
-```python
-quadratic([1, 0, -1], 3)  # → 8
-```
-
----
-
-### `polinomial(coefs, x)`
-
-Calcula um **polinómio de grau arbitrário**.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `coefs`   | `list` | Lista com N coeficientes, do maior grau para o menor |
-| `x`       | `float` ou `array` | Valor(es) da variável independente |
-
-**Output:** Valor do polinómio em `x`.
-
-> ⚠️ Nota: o grau mais alto calculado é `len(coefs)`, não `len(coefs)-1`. Confirma a convenção ao usar.
-
----
-
-### `sin(x, A=1., omega=1., phi=0, c=0)`
-
-Calcula uma função **sinusoidal** parametrizada.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `x`       | `float` ou `array` | Variável independente |
-| `A`       | `float` | Amplitude (default: 1) |
-| `omega`   | `float` | Frequência angular (default: 1) |
-| `phi`     | `float` | Fase (default: 0) |
-| `c`       | `float` | Deslocamento vertical (default: 0) |
-
-**Output:** `A * sin(omega*x + phi)`
-
----
-
-### `cos(x, A=1., omega=1., phi=0, c=0)`
-
-Calcula uma função **co-sinusoidal** parametrizada.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `x`       | `float` ou `array` | Variável independente |
-| `A`       | `float` | Amplitude (default: 1) |
-| `omega`   | `float` | Frequência angular (default: 1) |
-| `phi`     | `float` | Fase (default: 0) |
-| `c`       | `float` | Deslocamento vertical (default: 0) |
-
-**Output:** `A * cos(omega*x + phi)`
-
----
-
-### `log(x, A=1, fac=0, c1=0, c2=0)`
-
-Calcula uma função **logarítmica** parametrizada.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `x`       | `float` ou `array` | Variável independente |
-| `A`       | `float` | Fator multiplicativo (default: 1) |
-| `fac`     | `float` | Fator interno do logaritmo (default: 0) |
-| `c1`      | `float` | Constante aditiva interna (default: 0) |
-| `c2`      | `float` | Constante aditiva externa (default: 0) |
-
-**Output:** `A * log(fac*x + c1) + c2`
-
----
-
-### `exp(x, A=1, fac=1, c1=0, c2=0)`
-
-Calcula uma função **exponencial** parametrizada.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `x`       | `float` ou `array` | Variável independente |
-| `A`       | `float` | Fator multiplicativo (default: 1) |
-| `fac`     | `float` | Fator do expoente (default: 1) |
-| `c1`      | `float` | Constante aditiva no expoente (default: 0) |
-| `c2`      | `float` | Constante aditiva externa (default: 0) |
-
-**Output:** `A * exp(fac*x + c1) + c2`
+Calcula uma função **quadrática** (`coefs[0]*x² + coefs[1]*x + coefs[2]`).
 
 ---
 
 ## ⚙️ `operations.py` — Operações e Utilitários
 
-Este ficheiro contém as funções de tratamento de dados, ajuste por ODR e formatação de resultados.
+Ficheiro contendo ferramentas de tratamento de dados e utilitários ODR:
 
----
-
-### `getTable(columns, data, title, firstcolumnShade, size)`
-
-Gera e exibe uma **tabela formatada** visualmente usando `matplotlib`, com cabeçalhos a azul, linhas alternadas e opção de sombreado na primeira coluna.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `columns` | `list[str]` | Nomes das colunas (cabeçalhos) |
-| `data`    | `list[list]` | Dados da tabela: lista de linhas, cada uma com valores correspondentes às colunas |
-| `title`   | `str` | Título a apresentar por cima da tabela |
-| `firstcolumnShade` | `bool` | Se `True`, a primeira coluna é sombreada a cinza e negrito |
-| `size`    | `tuple` | Tamanho da figura em polegadas, ex: `(10, 4)` |
-
-**Output:** Exibe a tabela diretamente (sem valor de retorno).
-
-```python
-getTable(
-    columns=["Grandeza", "Valor", "Incerteza"],
-    data=[
-        ["Massa (kg)", "1.234", "0.002"],
-        ["Comprimento (m)", "0.567", "0.001"],
-    ],
-    title="Medições Experimentais",
-    firstcolumnShade=True,
-    size=(10, 3)
-)
-```
-
-**Estilo gerado:**
-- Cabeçalhos com fundo **azul** e texto branco a bold
-- Linhas alternadas entre **branco** e **cinza claro**
-- Primeira coluna opcional em **cinza escuro** e bold
-- Fonte de tamanho 12, células escaladas para boa legibilidade
+- `getAdjust(dataset)` — Retorna o ajuste do objeto `DataSet` (ou executa ODR para dados genéricos).
+- `getSignAlg(dataset)` — Tratamento de algarismos significativos e arredondamento de dados/incertezas.
+- `getTable(columns, data, title, firstcolumnShade, size)` — Exibe tabelas formatadas com `matplotlib`.
 
 ---
 
 ## 📊 `plot.py` — Visualização e Análise Gráfica
 
-Este ficheiro contém as funções de alto nível para gerar gráficos de regressão, análise de resíduos e comparação de múltiplos datasets. Todas usam internamente `getAdjust` para o ajuste ODR.
+Todas as funções de gráfico recebem agora objetos `DataSet` (ou listas de `DataSet`).
 
----
+### `plot(dataset, label="Dados", color="black", hlines=None)`
+Gera um gráfico simples com pontos e barras de erro a partir de um `DataSet`.
 
-### `plot(x, y, xs,ys,xerrs=None,yerrs=None,title="Título",xlabel="x",ylabel="y", label="Dados", color="black")`
+### `plotLinReg(dataset)` / `plotQuadReg(dataset)`
+Exibe o gráfico dos pontos experimentais e a curva de regressão associada ao `DataSet`.
 
-Simplesmente dá plot dos dados
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `x`, `y`  | `array` | Dados experimentais |
-| `xerr`, `yerr` | `float` ou `array` | Incertezas (valor único ou array) |
-| `title`   | `str` | Título do gráfico |
-| `xlabel`, `ylabel`, `label` | `str` | Rótulos dos eixos e dos pontos |
-| `color` | `str` | Cor dos pontos |
-
-**Output:** Gráfico com pontos
-
----
-
-### `fullLinAnalysis(x, y, xerr, yerr, title, xlabel, ylabel, separate=True, beta0=[1,1], tol=1, xscale='linear', yscale='linear', s=5)`
-
-Realiza uma **análise linear completa** de forma automática: faz o ajuste, calcula os resíduos, rejeita pontos fora do intervalo de tolerância e exibe tanto o gráfico de regressão como o de resíduos.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `x`, `y`  | `array` | Dados experimentais |
-| `xerr`, `yerr` | `float` ou `array` | Incertezas (valor único ou array) |
-| `title`   | `str` | Título do gráfico |
-| `xlabel`, `ylabel` | `str` | Rótulos dos eixos |
-| `separate` | `bool` | Separação dos gráficos de regressão e resíduos |
-| `beta0`   | `list` | Estimativa inicial dos coeficientes (default: `[1,1]`) |
-| `tol`     | `float` | Tolerância em número de desvios padrão para rejeição de pontos (default: `1`) |
-| `xscale`, `yscale` | `str` | Escala dos eixos: `'linear'` ou `'log'` |
-| `s` | `int` | Tamanho dos pontos experimentais |
-
-**Output:** Exibe gráfico de regressão + gráfico de resíduos ou os dois colados(`separate=False`) e devolve o objeto `adjust` final (apenas com pontos aceites).
+### `fullLinAnalysis(dataset, separate=True, tol=1, xscale='linear', yscale='linear', s=5)`
+Realiza uma análise completa: exibe a regressão, filtra resíduos com base na tolerância `tol` (desvios padrão) e apresenta o gráfico de resíduos.
 
 ```python
-adjust = fullLinAnalysis(
-    x, y, 0.01, yerr,
-    title=r"Posição\ vs\ Tempo",
-    xlabel=r"t\ (s)",
-    ylabel=r"x\ (m)",
-    tol=1.5
-)
+adjust_final = fullLinAnalysis(ds, separate=False, tol=1.5)
 ```
 
----
-
-### `plotColumnFullLinReg(xs, ys, xerrs, yerrs, titles, xlabels, ylabels, beta0=[1,1], tol=1)`
-
-Plota **múltiplos gráficos em coluna** (regressão + resíduos por linha), um conjunto de dados por linha. Ideal para comparar várias experiências de forma compacta.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `xs`, `ys` | `list[array]` | Lista de arrays de dados |
-| `xerrs`, `yerrs` | `list` | Lista de incertezas (float ou array por dataset) |
-| `titles`  | `list[str]` | Títulos de cada gráfico |
-| `xlabels`, `ylabels` | `str` ou `list[str]` | Rótulos (um único aplicado a todos, ou lista) |
-| `beta0`   | `list` | Estimativa inicial dos coeficientes |
-| `tol`     | `float` | Tolerância para rejeição de pontos |
-
-**Output:** Exibe a figura com todos os gráficos e devolve uma `list` com os objetos `adjust` de cada dataset.
+### `plotColumnFullLinReg(datasets, tol=1)`
+Plota múltiplos conjuntos de dados (uma lista de `DataSet`) em formato de colunas (regressão + resíduos por linha).
 
 ```python
-adjusts = plotColumnFullLinReg(
-    xs=[x1, x2], ys=[y1, y2],
-    xerrs=[xerr1, xerr2], yerrs=[yerr1, yerr2],
-    titles=["Exp 1", "Exp 2"],
-    xlabels=r"t\ (s)", ylabels=r"x\ (m)"
-)
+adjusts = plotColumnFullLinReg([ds1, ds2], tol=1)
 ```
 
----
-
-### `plotMultipleReg(xs, ys, xerrs, yerrs, title, xlabel, ylabel, colors, legends="Pontos Experimentais", tol=1, beta0=[1,1], xscale='linear', yscale='linear', errorbars=True)`
-
-Plota **múltiplos datasets no mesmo gráfico**, cada um com a sua regressão linear e cor distinta.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `xs`, `ys` | `list[array]` | Lista de arrays de dados |
-| `xerrs`, `yerrs` | `float` ou `list` | Incertezas (valor único para todos ou lista) |
-| `title`   | `str` | Título do gráfico |
-| `xlabel`, `ylabel` | `str` | Rótulos dos eixos |
-| `colors`  | `list[str]` | Lista de cores (uma por dataset), ex: `["blue","red"]` |
-| `legends` | `list[str]` | Legenda de cada dataset (default: `"Pontos Experimentais"` para todos) |
-| `tol`     | `float` | Tolerância para rejeição de pontos (default: `1`) |
-| `beta0`   | `list` | Estimativa inicial dos coeficientes |
-| `xscale`, `yscale` | `str` | Escala dos eixos |
-| `errorbars` | `bool` | Ativar/Desativar Barras de Erro |
-
-**Output:** Exibe o gráfico e devolve um `array` com os objetos `adjust` de cada dataset.
+### `plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regressions=False, errorbars=True)`
+Sobrepõe múltiplos `DataSet` no mesmo gráfico com cores e legendas personalizadas.
 
 ```python
 regs = plotMultipleReg(
-    xs=[x1, x2], ys=[y1, y2],
-    xerrs=0.01, yerrs=0.05,
-    title="Comparação",
-    xlabel=r"T\ (K)", ylabel=r"P\ (Pa)",
-    colors=["blue", "red"],
-    legends=["Amostra A", "Amostra B"]
+    datasets=[ds1, ds2],
+    colors=["black", "blue"],
+    legends=["Amostra 1", "Amostra 2"],
+    regressions=True
 )
 ```
-
----
-
-### `plotColumnReg(xs, ys, xerrs, yerrs, titles, xlabels, ylabels, func, beta0=[1,1], tol=1)`
-
-Semelhante a `plotColumnFullLinReg`, mas aceita **qualquer função de ajuste** (não apenas linear). Usa `func` como modelo de regressão.
-
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `xs`, `ys` | `list[array]` | Lista de arrays de dados |
-| `xerrs`, `yerrs` | `list` | Incertezas por dataset |
-| `titles`  | `list[str]` | Títulos de cada gráfico |
-| `xlabels`, `ylabels` | `str` ou `list[str]` | Rótulos dos eixos |
-| `func`    | `callable` | Função de ajuste a usar como modelo (ex: `quadratic`) |
-| `beta0`   | `list` | Estimativa inicial dos coeficientes |
-| `tol`     | `float` | Tolerância para rejeição de pontos |
-
-**Output:** Exibe a figura em coluna e devolve uma `list` com os objetos `adjust` de cada dataset.
-
-```python
-adjusts = plotColumnReg(
-    xs=[x1, x2], ys=[y1, y2],
-    xerrs=[xerr1, xerr2], yerrs=[yerr1, yerr2],
-    titles=["Exp 1", "Exp 2"],
-    xlabels=r"x\ (m)", ylabels=r"E\ (J)",
-    func=quadratic,
-    beta0=[1, 1, 0]
-)
-```
-
----
-
-## 🔩 Funções Auxiliares
-
-Para além das funções principais descritas acima, existem várias **funções auxiliares** utilizadas internamente que podem ser exploradas diretamente para casos de uso mais avançados. Encontram-se em `operations.py` e incluem, entre outras:
-
-- `getAdjust` — ajuste ODR genérico com qualquer modelo
-- `getData` — leitura de ficheiros de dados com separador tab
-- `getPolynomialLabel` / `getPolynomialLabel2` — formatação de equações em LaTeX para legendas
-- `round_un` — arredondamento de valores à ordem da incerteza
-- `getUncertainty` / `getSignAlg` — tratamento de algarismos significativos e incertezas
-- `handleCientNot` — formatação de notação científica para LaTeX
-- `derivativePolinomialCoefs` — derivada de um polinómio pelos seus coeficientes
-
-Estas funções estão disponíveis via `import base as b` e podem ser consultadas diretamente no código fonte de `operations.py`.
-
----
-
-## 📝 Notas Gerais
-
-- Os rótulos `xlabel` e `ylabel` suportam **LaTeX** (são renderizados com `rf"$...$"`). Usa `\` para comandos LaTeX, ex: `r"t\ (s)"`, `r"\lambda\ (nm)"`.
-- O parâmetro `beta0` deve ter tantos elementos quantos os coeficientes da função usada (`[1,1]` para linear, `[1,1,1]` para quadrática, etc.).
-- Os objetos `adjust` devolvidos pelas funções de plot são resultados do **SciPy ODR** e contêm, entre outros:
-  - `adjust.beta` — coeficientes ajustados
-  - `adjust.sd_beta` — incertezas dos coeficientes

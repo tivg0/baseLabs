@@ -11,11 +11,19 @@ def derivativePolinomialCoefs(coefs):
 def getData(filename, skip=1):
     return np.genfromtxt(filename, delimiter="\t", unpack=True, skip_header=skip)
 
-def getAdjust(func, x, y, ux, uy, beta0=[1,1]):
+def getAdjust(func_or_dataset, x=None, y=None, ux=None, uy=None, beta0=None):
+    if hasattr(func_or_dataset, 'x') and hasattr(func_or_dataset, 'y'):
+        dataset = func_or_dataset
+        if beta0 is not None:
+            return dataset.calculate_adjust(beta0)
+        return dataset.adjust
+    func = func_or_dataset
+    if beta0 is None:
+        beta0 = [1, 1]
     mod = Model(func)
-    data1=RealData(x,y,ux,uy)
-    odr=ODR(data1,mod, beta0)
-    output=odr.run()
+    data1 = RealData(x, y, ux, uy)
+    odr = ODR(data1, mod, beta0)
+    output = odr.run()
     return output
 
 def getPolynomialLabel(beta, x, y):
@@ -88,104 +96,6 @@ def handleCientNot(x):
     new = f"{x:.3e}"
     if (new.endswith("00")):
         return new.split("e")[0]
-    elif (new.endswith("01")):
-        new = f"{x*10:.3e}"
-        return new.split("e")[0]
-    elif (new.endswith("02")):
-        new = f"{x*100:.3e}"
-        return new.split("e")[0]
-    elif (new.endswith("-01") or new.endswith('-1')):
-        new = f"{x/10:.3e}"
-        return new.split("e")[0]
-    elif (new.endswith("-02") or new.endswith('-2')):
-        new = f"{x/100:.3e}"
-        return new.split("e")[0]
-    else:
-        return new.split("e")[0] + r'\times10^' + '{' + str(int(f'{x:.3e}'.split('e')[1])) + '}'
-    
-def round_un(x,u):
-    if u == 0:
-        return np.array([x, u])
-    order = int(np.floor(np.log10(abs(u))))
-    decimals = -(order - 1)
-    
-    u_rounded = round(u, decimals)
-    x_rounded = round(x, decimals)
-    
-    return np.array([x_rounded, u_rounded,decimals])
-    
-def getPolynomialLabel2(beta,betastd, x, y):
-    x = x.split('(')[0]
-    y = y.split('(')[0]
-    s = rf"${y}({x}) = "
-    
-    for i in range(len(beta)):
-        coef_power = len(beta) - i - 1
-        c=round_un(beta[i],betastd[i])
-        coef_value = c[0]
-        sci_str = f"{coef_value:e}"
-        exp = sci_str.split('e')[1]
-        if abs(coef_value)<9:
-            n=int((c[2]-abs(int(exp))))
-        else:
-            n=int(c[2] + int(exp))
-        
-
-        # Add + sign if positive and not the first term
-        sign = "+" if coef_value >= 0 and i != 0 else ""
-        #print(coef_value)
-        formattedCoefValue = f'{coef_value:.{n}e}'.split('e')[0] 
-        #print(formattedCoefValue)
-        if ('e' in f'{coef_value:.{n}e}' and '00' not in f'{coef_value:.{n}e}'.split('e')[1]):
-            formattedCoefValue += r'\times10^' + '{' + str(int(f'{coef_value:.{n}e}'.split('e')[1])) + '}'
-        
-        if coef_power > 1:
-            term = rf"{sign}{formattedCoefValue}{x}^{coef_power}"
-        elif coef_power == 1:
-            term = rf"{sign}{formattedCoefValue}{x}"
-        else:
-            term = rf"{sign}{formattedCoefValue}"
-        
-        s += term
-    
-    s += "$"
-    return s
-#
-def getUncertainty(uxs):
-    Is = []
-
-    for ux in uxs:
-        i = 0
-        if ux < 1:
-            while ux < 1:
-                ux *= 10
-                i += 1
-        else:
-            while ux > 1:
-                ux /= 10
-                i += 1
-        Is.append(i)
-    return np.array(Is,int)
-
-def getSignAlg(xs,uxs):
-    uncuxs = getUncertainty(uxs)
-    uncxs = getUncertainty(xs)
-
-    for i in range(len(xs)):
-        uxs[i] = round(uxs[i],uncuxs[i])
-        if uxs[i] < xs[i]:
-            arred = -uncxs[i]+uncuxs[i]
-            xs[i] = round(xs[i],uncuxs[i])
-        else:
-            e = getUncertainty([xs[i]])[0]
-            xs[i] = round(xs[i],e)
-
-    return [xs, uxs]
-
-def handleCientNot(x):
-    new = f"{x:.3e}"
-    if (new.endswith("00")):
-        return new.split("e")[0]
     elif (new.endswith("-01") or new.endswith('-1')):
         new = f"{x:.4f}"
         return new
@@ -200,3 +110,85 @@ def handleCientNot(x):
         return new
     else:
         return new.split("e")[0] + r'\times10^' + '{' + str(int(f'{x:.3e}'.split('e')[1])) + '}'
+
+def round_un(x, u):
+    if u == 0 or np.isnan(u) or np.isnan(x):
+        return np.array([x if not np.isnan(x) else 0.0, u if not np.isnan(u) else 0.0, 0])
+    order = int(np.floor(np.log10(abs(u))))
+    decimals = -(order - 1)
+    
+    u_rounded = round(u, decimals)
+    x_rounded = round(x, decimals)
+    
+    return np.array([x_rounded, u_rounded, decimals])
+
+def getPolynomialLabel2(beta, betastd, x, y):
+    x = x.split('(')[0]
+    y = y.split('(')[0]
+    s = rf"${y}({x}) = "
+    
+    for i in range(len(beta)):
+        coef_power = len(beta) - i - 1
+        c = round_un(beta[i], betastd[i])
+        coef_value = c[0]
+        sci_str = f"{coef_value:e}"
+        exp = sci_str.split('e')[1] if 'e' in sci_str else '0'
+        if abs(coef_value) < 9:
+            n = int((c[2] - abs(int(exp))))
+        else:
+            n = int(c[2] + int(exp))
+        n = max(0, n)
+        
+        sign = "+" if coef_value >= 0 and i != 0 else ""
+        formattedCoefValue = f'{coef_value:.{n}e}'.split('e')[0] 
+        if ('e' in f'{coef_value:.{n}e}' and '00' not in f'{coef_value:.{n}e}'.split('e')[1]):
+            formattedCoefValue += r'\times10^' + '{' + str(int(f'{coef_value:.{n}e}'.split('e')[1])) + '}'
+        
+        if coef_power > 1:
+            term = rf"{sign}{formattedCoefValue}{x}^{coef_power}"
+        elif coef_power == 1:
+            term = rf"{sign}{formattedCoefValue}{x}"
+        else:
+            term = rf"{sign}{formattedCoefValue}"
+        
+        s += term
+    
+    s += "$"
+    return s
+
+def getUncertainty(uxs):
+    Is = []
+    for ux in uxs:
+        i = 0
+        if ux < 1:
+            while ux < 1:
+                ux *= 10
+                i += 1
+        else:
+            while ux > 1:
+                ux /= 10
+                i += 1
+        Is.append(i)
+    return np.array(Is, int)
+
+def getSignAlg(xs, uxs=None):
+    if hasattr(xs, 'x') and hasattr(xs, 'ux'):
+        dataset = xs
+        xs_arr = np.copy(dataset.x)
+        uxs_arr = np.copy(dataset.ux)
+    else:
+        xs_arr = np.copy(xs)
+        uxs_arr = np.copy(uxs)
+
+    uncuxs = getUncertainty(uxs_arr)
+    uncxs = getUncertainty(xs_arr)
+
+    for i in range(len(xs_arr)):
+        uxs_arr[i] = round(uxs_arr[i], uncuxs[i])
+        if uxs_arr[i] < xs_arr[i]:
+            xs_arr[i] = round(xs_arr[i], uncuxs[i])
+        else:
+            e = getUncertainty([xs_arr[i]])[0]
+            xs_arr[i] = round(xs_arr[i], e)
+
+    return [xs_arr, uxs_arr]

@@ -23,3 +23,9 @@ def log(x,A=1,fac=0,c1=0,c2=0):
 
 def exp(x,A=1,fac=1,c1=0,c2=0):
     return A*np.exp(fac*x+c1)+c2
+
+def inverse(coefs, x):
+    return coefs[0]/x+coefs[1]
+
+def inversesqrt(coefs, x):
+    return coefs[0]/x**(1/10)+coefs[1]
