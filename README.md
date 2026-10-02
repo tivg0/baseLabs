@@ -1,4 +1,4 @@
-# 🧪 labs2-starter-pack
+# 🧪 labs-starter-pack
 
 Uma biblioteca Python desenvolvida para apoiar a análise de dados experimentais em laboratório, com ferramentas de regressão, visualização de gráficos e formatação de tabelas. Criada para ser usada em **Jupyter Notebooks**.
 
