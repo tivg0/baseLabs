@@ -10,6 +10,8 @@ except ImportError:
     from operations import *
     from dataset import DataSet
 
+plt.rcParams['errorbar.capsize'] = 4
+
 
 def plotLinReg(dataset):
     plt.figure(figsize=(12,8))
