@@ -396,3 +396,5 @@ def plot(dataset, label="Dados", color="black", hlines=None):
     plt.legend()
     plt.grid()
     plt.show()
+
+#fodasse
