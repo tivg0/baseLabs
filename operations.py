@@ -9,6 +9,7 @@ def derivativePolinomialCoefs(coefs):
     return coefs[1:]
 
 def getData(filename, skip=1):
+    #converters = {0: lambda s: float(s.decode("utf-8").replace(",", "."))}
     return np.genfromtxt(filename, delimiter="\t", unpack=True, skip_header=skip)
 
 def getAdjust(func_or_dataset, x=None, y=None, ux=None, uy=None, beta0=None):
