@@ -390,9 +390,9 @@ def plot(dataset, label="Dados", color="black", hlines=None):
         for i in hlines:
             plt.axhline(i[0], color="red", label=i[1])
 
-    plt.title(dataset.titulo)
-    plt.xlabel(dataset.labelx)
-    plt.ylabel(dataset.labely)
+    plt.title(fr"${dataset.titulo}$")
+    plt.xlabel(fr"${dataset.labelx}$")
+    plt.ylabel(fr"${dataset.labely}$")
     plt.legend()
     plt.grid()
     plt.show()
