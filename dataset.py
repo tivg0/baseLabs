@@ -36,7 +36,7 @@ class DataSet:
         if beta0 is None:
             if self.fit_type == quadratic:
                 beta0 = [1, 1, 1]
-            else:
+            elif self.fit_type == lin:
                 beta0 = [1, 1]
         mod = Model(self.fit_type)
         data1 = RealData(self.x, self.y, self.ux, self.uy)
