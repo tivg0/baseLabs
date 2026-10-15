@@ -379,7 +379,7 @@ def plotColumnReg(datasets, tol=1):
     return adjusts
 
 
-def plot(dataset, label="Dados", color="black", hlines=None):
+def plot(dataset, label="Dados", color="black", hlines=None, meanAndStd=False):
     plt.figure(figsize=(12,8))
     if dataset.ux is None and dataset.uy is None:
         plt.scatter(dataset.x, dataset.y, c=color, label=label)
@@ -388,7 +388,12 @@ def plot(dataset, label="Dados", color="black", hlines=None):
 
     if hlines is not None:
         for i in hlines:
-            plt.axhline(i[0], color="red", label=i[1])
+            plt.axhline(i[0], color=i[2], label=i[1])
+    
+    if meanAndStd:
+        plt.axhline(np.mean(dataset.y), color="red", label=f"Média {np.mean(dataset.y):.2e}")
+        plt.axhline(np.mean(dataset.y) + np.std(dataset.y), color="orange", label=f"Desvio Padrão {np.std(dataset.y):.2e}")
+        plt.axhline(np.mean(dataset.y) - np.std(dataset.y), color="orange")
 
     plt.title(fr"${dataset.titulo}$")
     plt.xlabel(fr"${dataset.labelx}$")
@@ -397,4 +402,206 @@ def plot(dataset, label="Dados", color="black", hlines=None):
     plt.grid()
     plt.show()
 
-#fodasse
+
+def plotHist(dataset, bins="auto", axis="y", label="Histograma", color="#4C7BB8", edgecolor="black", alpha=0.7, density=False, normalize=False, meanAndStd=False, gaussian=False, poisson=False, vlines=None, title=None, xlabel=None, ylabel=None):
+    plt.figure(figsize=(12, 8))
+    
+    data = dataset.y if axis == "y" else dataset.x
+    
+    weights = np.ones(len(data)) / len(data) if normalize else None
+    d = False if normalize else density
+    actual_bins = np.histogram_bin_edges(data, bins=bins) if isinstance(bins, str) else bins
+    counts, bin_edges, patches = plt.hist(data, bins=actual_bins, weights=weights, color=color, edgecolor=edgecolor, alpha=alpha, density=d, label=label)
+
+    if vlines is not None:
+        for i in vlines:
+            c = i[2] if len(i) > 2 else "red"
+            plt.axvline(i[0], color=c, label=i[1])
+
+    if meanAndStd:
+        mean_val = np.mean(data)
+        std_val = np.std(data)
+        plt.axvline(mean_val, color="red", linewidth=2, label=f"Média {mean_val:.2e}")
+        plt.axvline(mean_val + std_val, color="orange", linestyle="--", linewidth=1.5, label=f"Desvio Padrão {std_val:.2e}")
+        plt.axvline(mean_val - std_val, color="orange", linestyle="--", linewidth=1.5)
+
+    if gaussian:
+        mu = np.mean(data)
+        sigma = np.std(data)
+        if sigma > 0:
+            xg = np.linspace(min(data), max(data), 200)
+            yg = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((xg - mu) / sigma) ** 2)
+            bin_width = np.diff(bin_edges)[0] if len(bin_edges) > 1 else 1.0
+            if normalize:
+                yg *= bin_width
+            elif not density:
+                yg *= len(data) * bin_width
+            plt.plot(xg, yg, color="red", linewidth=2, label=f"Gaussiana ($\\mu={mu:.2e}$, $\\sigma={sigma:.2e}$)")
+
+    if poisson:
+        mu = np.mean(data)
+        if mu > 0:
+            k_min = max(0, int(np.floor(np.min(data))))
+            k_max = int(np.ceil(np.max(data)))
+            k_min = min(k_min, max(0, int(np.floor(mu - 3 * np.sqrt(mu)))))
+            k_max = max(k_max, int(np.ceil(mu + 3 * np.sqrt(mu))))
+            k = np.arange(k_min, k_max + 1)
+
+            try:
+                from scipy.stats import poisson as sp_poisson
+                yp = sp_poisson.pmf(k, mu)
+            except Exception:
+                from scipy.special import gammaln
+                yp = np.exp(k * np.log(mu) - mu - gammaln(k + 1))
+
+            bin_width = np.diff(bin_edges)[0] if len(bin_edges) > 1 else 1.0
+            if normalize:
+                yp_plot = yp * bin_width
+            elif not density:
+                yp_plot = yp * len(data) * bin_width
+            else:
+                yp_plot = yp / bin_width if bin_width > 0 else yp
+
+            plt.plot(k, yp_plot, color="orange", marker="o" if len(k) <= 50 else "", markersize=4, linewidth=1.8, label=f"Poisson ($\\lambda={mu:.2e}$)")
+
+    t = title if title is not None else dataset.titulo
+    lx = xlabel if xlabel is not None else (dataset.labely if axis == "y" else dataset.labelx)
+    if ylabel is not None:
+        ly = ylabel
+    elif normalize:
+        ly = "Probabilidade"
+    elif density:
+        ly = "Densidade de Probabilidade"
+    else:
+        ly = "Frequência"
+
+    plt.title(fr"${t}$" if not str(t).startswith("$") else t)
+    plt.xlabel(fr"${lx}$" if not str(lx).startswith("$") else lx)
+    plt.ylabel(ly)
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+    return counts, bin_edges, patches
+
+
+plotHistogram = plotHist
+plotHistograma = plotHist
+
+
+def plotMultiHist(datasets, nrows=None, ncols=None, bins="auto", axis="y", color="#4C7BB8", edgecolor="black", alpha=0.7, density=False, normalize=False, meanAndStd=False, gaussian=False, poisson=False, figsize=None, titles=None, xlabels=None, ylabels=None):
+    N = len(datasets)
+    if N == 0:
+        return None, None
+
+    if nrows is None and ncols is None:
+        if N == 1:
+            nrows, ncols = 1, 1
+        else:
+            ncols = 2
+            nrows = int(np.ceil(N / ncols))
+    elif nrows is not None and ncols is None:
+        ncols = int(np.ceil(N / nrows))
+    elif ncols is not None and nrows is None:
+        nrows = int(np.ceil(N / ncols))
+
+    if figsize is None:
+        figsize = (ncols * 7, nrows * 4.5)
+
+    fig, axs = plt.subplots(nrows, ncols, figsize=figsize)
+    
+    if isinstance(axs, np.ndarray):
+        axes_list = list(axs.flat)
+    else:
+        axes_list = [axs]
+
+    for i, ax in enumerate(axes_list):
+        if i >= N:
+            ax.set_visible(False)
+            continue
+
+        ds = datasets[i]
+        data = ds.y if axis == "y" else ds.x
+
+        b = bins[i] if isinstance(bins, list) and len(bins) > i else bins
+        c = color[i] if isinstance(color, list) and len(color) > i else color
+        lbl = ds.titulo if ds.titulo else f"Dataset {i+1}"
+
+        weights = np.ones(len(data)) / len(data) if normalize else None
+        d = False if normalize else density
+        actual_b = np.histogram_bin_edges(data, bins=b) if isinstance(b, str) else b
+        counts, bin_edges, patches = ax.hist(data, bins=actual_b, weights=weights, color=c, edgecolor=edgecolor, alpha=alpha, density=d, label=fr"${lbl}$")
+
+        if meanAndStd:
+            mean_val = np.mean(data)
+            std_val = np.std(data)
+            ax.axvline(mean_val, color="red", linewidth=2, label=f"Média {mean_val:.2e}")
+            ax.axvline(mean_val + std_val, color="orange", linestyle="--", linewidth=1.5, label=f"Desvio {std_val:.2e}")
+            ax.axvline(mean_val - std_val, color="orange", linestyle="--", linewidth=1.5)
+
+        if gaussian:
+            mu = np.mean(data)
+            sigma = np.std(data)
+            if sigma > 0:
+                xg = np.linspace(min(data), max(data), 200)
+                yg = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((xg - mu) / sigma) ** 2)
+                bin_width = np.diff(bin_edges)[0] if len(bin_edges) > 1 else 1.0
+                if normalize:
+                    yg *= bin_width
+                elif not density:
+                    yg *= len(data) * bin_width
+                ax.plot(xg, yg, color="red", linewidth=2, label=f"Gaussiana ($\\mu={mu:.2e}$, $\\sigma={sigma:.2e}$)")
+
+        if poisson:
+            mu = np.mean(data)
+            if mu > 0:
+                k_min = max(0, int(np.floor(np.min(data))))
+                k_max = int(np.ceil(np.max(data)))
+                k_min = min(k_min, max(0, int(np.floor(mu - 3 * np.sqrt(mu)))))
+                k_max = max(k_max, int(np.ceil(mu + 3 * np.sqrt(mu))))
+                k = np.arange(k_min, k_max + 1)
+
+                try:
+                    from scipy.stats import poisson as sp_poisson
+                    yp = sp_poisson.pmf(k, mu)
+                except Exception:
+                    from scipy.special import gammaln
+                    yp = np.exp(k * np.log(mu) - mu - gammaln(k + 1))
+
+                bin_width = np.diff(bin_edges)[0] if len(bin_edges) > 1 else 1.0
+                if normalize:
+                    yp_plot = yp * bin_width
+                elif not density:
+                    yp_plot = yp * len(data) * bin_width
+                else:
+                    yp_plot = yp / bin_width if bin_width > 0 else yp
+
+                ax.plot(k, yp_plot, color="orange", marker="o" if len(k) <= 50 else "", markersize=4, linewidth=1.8, label=f"Poisson ($\\lambda={mu:.2e}$)")
+
+        t = titles[i] if (isinstance(titles, list) and len(titles) > i) else (titles if titles is not None else ds.titulo)
+        lx = xlabels[i] if (isinstance(xlabels, list) and len(xlabels) > i) else (xlabels if xlabels is not None else (ds.labely if axis == "y" else ds.labelx))
+        if ylabels is not None:
+            ly = ylabels[i] if isinstance(ylabels, list) and len(ylabels) > i else ylabels
+        elif normalize:
+            ly = "Probabilidade"
+        elif density:
+            ly = "Densidade"
+        else:
+            ly = "Frequência"
+
+        ax.set_title(fr"${t}$" if not str(t).startswith("$") else t)
+        ax.set_xlabel(fr"${lx}$" if not str(lx).startswith("$") else lx)
+        ax.set_ylabel(fr"{ly}")
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
+    return fig, axs
+
+
+plotMultiHistogram = plotMultiHist
+plotMultiHistograma = plotMultiHist
+plotHistogramas = plotMultiHist
+
