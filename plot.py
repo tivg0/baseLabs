@@ -149,12 +149,15 @@ def finalResidues(dataset, xFalse=[], yFalse=[], stdy=0, s=5):
     plt.show()
 
 
-def fullLinAnalysis(dataset, separate=True, tol=1, xscale='linear', yscale='linear', s=5):
+def fullLinAnalysis(dataset, separate=True, tol=1, xscale='linear', yscale='linear', s=5, beta0=None):
     x, y = dataset.x, dataset.y
     xerr, yerr = dataset.ux, dataset.uy
     title, xlabel, ylabel = dataset.titulo, dataset.labelx, dataset.labely
     
-    adjust = dataset.adjust
+    if beta0 is not None:
+        adjust = dataset.calculate_adjust(beta0)
+    else:
+        adjust = dataset.adjust
 
     res = y - x * adjust.beta[0] - adjust.beta[1]
     stdy = np.std(res) * tol
@@ -169,8 +172,8 @@ def fullLinAnalysis(dataset, separate=True, tol=1, xscale='linear', yscale='line
     yerrTrue = yerr[abs(res) <= stdy_thresh]
     xerrTrue = xerr[abs(res) <= stdy_thresh]
 
-
-    dataset_true = DataSet(xTrue, yTrue, xerrTrue, yerrTrue, title, xlabel, ylabel, dataset.fit_type)
+    beta_for_true = beta0 if beta0 is not None else adjust.beta
+    dataset_true = DataSet(xTrue, yTrue, xerrTrue, yerrTrue, title, xlabel, ylabel, dataset.fit_type, beta0=beta_for_true)
 
     if separate:
         adjustFinal = plotFinal(dataset_true, xFalse, yFalse, xscale=xscale, yscale=yscale, s=s)
@@ -248,17 +251,39 @@ def plotColumnFullLinReg(datasets, tol=1):
     return adjusts
 
 
-def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regressions=False, tol=1, xscale='linear', yscale='linear', errorbars=True):
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
+def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regressions=False, tol=1, xscale='linear', yscale='linear', errorbars=True, residuals=True, residuos=None, s=None, markersize=None, point_size=None, line=False, lines=False, linha=False, linhas=False, linewidth=None, lw=None, showmax=False, show_max=False, mostramax=False, mostra_max=False):
+    if residuos is not None:
+        residuals = residuos
+    if point_size is not None:
+        s = point_size
+    elif markersize is not None:
+        s = markersize
+
+    if lw is not None:
+        linewidth = lw
+
+    as_line = line or lines or linha or linhas
+    showmax = showmax or show_max or mostramax or mostra_max
+
+    extra_eb = {"markersize": s} if s is not None else {}
+    extra_sc = {"s": s} if s is not None else {}
+    extra_line = {"linewidth": linewidth} if linewidth is not None else {}
+
+    if residuals:
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), gridspec_kw={'height_ratios': [3, 1]}, sharex=True)
+        ax2.axhline(0, c="red")
+    else:
+        fig, ax1 = plt.subplots(1, 1, figsize=(12, 8))
+        ax2 = None
+
     regs = np.zeros([len(datasets)], dtype=object)
+    max_points = []
 
     if legends == "Pontos Experimentais":
         legends = ["Pontos Experimentais"] * len(datasets)
 
     first_ds = datasets[0]
     title, xlabel, ylabel = first_ds.titulo, first_ds.labelx, first_ds.labely
-
-    ax2.axhline(0, c="red")
 
     for i in range(len(datasets)):
         ds = datasets[i]
@@ -271,27 +296,36 @@ def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regression
         adjust = ds.adjust
         regs[i] = adjust
 
-        if errorbars:
-            ax1.errorbar(x, y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i])
+        if showmax and len(y) > 0:
+            idx_max = np.argmax(y)
+            max_points.append((x[idx_max], y[idx_max], color))
+
+        if as_line:
+            ax1.plot(x, y, c=color, label=legends[i], **extra_line)
+        elif errorbars:
+            ax1.errorbar(x, y, xerr=xerr, yerr=yerr, c=color, fmt="o", label=legends[i], **extra_eb)
         else:
-            ax1.scatter(x, y, c=color, label=legends[i])
+            ax1.scatter(x, y, c=color, label=legends[i], **extra_sc)
 
         xLin = np.linspace(np.min(x), np.max(x), 50)
         yLin = ds.fit_type(adjust.beta, xLin)
         if regressions:
             ax1.plot(xLin, yLin, c=color, label=getPolynomialLabel2(adjust.beta, adjust.sd_beta, xlabel, ylabel))
 
-        res = y - ds.fit_type(adjust.beta, x)
-        if errorbars:
-            ax2.errorbar(x, res, yerr=yerr, c=color, fmt="o")
-        else:
-            ax2.scatter(x, res, c=color)
+        if residuals and ax2 is not None:
+            res = y - ds.fit_type(adjust.beta, x)
+            if as_line:
+                ax2.plot(x, res, c=color, **extra_line)
+            elif errorbars:
+                ax2.errorbar(x, res, yerr=yerr, c=color, fmt="o", **extra_eb)
+            else:
+                ax2.scatter(x, res, c=color, **extra_sc)
 
-        if tol is not None and tol > 0:
-            stdy = np.std(res) * tol
-            label_sig = f"Intervalo de {tol}σ ({legends[i]})" if len(datasets) > 1 else f"Intervalo de {tol}σ"
-            ax2.axhline(stdy, c=color, label=label_sig, alpha=0.5)
-            ax2.axhline(-stdy, c=color, alpha=0.5)
+            if tol is not None and tol > 0:
+                stdy = np.std(res) * tol
+                label_sig = f"Intervalo de {tol}σ ({legends[i]})" if len(datasets) > 1 else f"Intervalo de {tol}σ"
+                ax2.axhline(stdy, c=color, label=label_sig, alpha=0.5)
+                ax2.axhline(-stdy, c=color, alpha=0.5)
 
     ax1.set_title(rf"${title}$")
     ax1.set_ylabel(rf"${ylabel}$")
@@ -300,13 +334,58 @@ def plotMultipleReg(datasets, colors, legends="Pontos Experimentais", regression
     ax1.legend()
     ax1.grid()
 
-    ax2.set_xlabel(rf"${xlabel}$")
-    ax2.set_ylabel(rf"Resíduos ${ylabel}$")
-    ax2.grid()
-    if tol is not None and tol > 0:
-        ax2.legend()
+    if residuals and ax2 is not None:
+        ax2.set_xlabel(rf"${xlabel}$")
+        ax2.set_ylabel(rf"Resíduos ${ylabel}$")
+        ax2.grid()
+        if tol is not None and tol > 0:
+            ax2.legend()
+        plt.subplots_adjust(hspace=0)
+    else:
+        ax1.set_xlabel(rf"${xlabel}$")
 
-    plt.subplots_adjust(hspace=0)
+    if showmax and len(max_points) > 0:
+        target_ax = ax2 if (residuals and ax2 is not None) else ax1
+
+        ylim1 = ax1.get_ylim()
+        ymin1 = ylim1[0]
+        for xm, ym, col in max_points:
+            ax1.plot([xm, xm], [ymin1, ym], color=col, linestyle="--", linewidth=1.5, alpha=0.85, zorder=2)
+        ax1.set_ylim(ylim1)
+
+        if residuals and ax2 is not None:
+            ylim2 = ax2.get_ylim()
+            for xm, ym, col in max_points:
+                ax2.plot([xm, xm], ylim2, color=col, linestyle="--", linewidth=1.5, alpha=0.85, zorder=2)
+            ax2.set_ylim(ylim2)
+
+        xlim = target_ax.get_xlim()
+        x_range = abs(xlim[1] - xlim[0]) if xlim[1] != xlim[0] else 1.0
+        current_ticks = [t for t in target_ax.get_xticks() if xlim[0] <= t <= xlim[1]]
+
+        def format_tick(val):
+            if x_range >= 50:
+                return f"{val:.1f}".rstrip('0').rstrip('.') if abs(val - round(val)) > 1e-3 else f"{int(round(val))}"
+            elif x_range >= 5:
+                return f"{val:.2f}".rstrip('0').rstrip('.')
+            elif x_range >= 0.5:
+                return f"{val:.3f}".rstrip('0').rstrip('.')
+            else:
+                return f"{val:.4f}".rstrip('0').rstrip('.')
+
+        filtered_ticks = [t for t in current_ticks if all(abs(t - xm[0]) > 0.03 * x_range for xm in max_points)]
+        all_ticks = sorted(list(set(filtered_ticks + [xm[0] for xm in max_points])))
+
+        labels = [format_tick(t) for t in all_ticks]
+        target_ax.set_xticks(all_ticks, labels=labels)
+        target_ax.set_xlim(xlim)
+
+        for tick_val, lbl in zip(all_ticks, target_ax.get_xticklabels()):
+            for xm, ym, col in max_points:
+                if abs(tick_val - xm) < 1e-5:
+                    lbl.set_color(col)
+                    lbl.set_fontweight('bold')
+
     plt.show()
 
     return regs
@@ -379,7 +458,7 @@ def plotColumnReg(datasets, tol=1):
     return adjusts
 
 
-def plot(dataset, label="Dados", color="black", hlines=None, meanAndStd=False):
+def plot(dataset, label="Dados", color="black", hlines=None, meanAndStd=False,xscale="linear",yscale="linear"):
     plt.figure(figsize=(12,8))
     if dataset.ux is None and dataset.uy is None:
         plt.scatter(dataset.x, dataset.y, c=color, label=label)
@@ -398,6 +477,8 @@ def plot(dataset, label="Dados", color="black", hlines=None, meanAndStd=False):
     plt.title(fr"${dataset.titulo}$")
     plt.xlabel(fr"${dataset.labelx}$")
     plt.ylabel(fr"${dataset.labely}$")
+    plt.xscale(xscale)
+    plt.yscale(yscale)
     plt.legend()
     plt.grid()
     plt.show()

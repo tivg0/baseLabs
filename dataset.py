@@ -30,14 +30,23 @@ class DataSet:
         self.labely = labely
         self.fit_type = fit_type
         
+        self.beta0 = beta0
         self.adjust = self.calculate_adjust(beta0)
         
     def calculate_adjust(self, beta0=None):
         if beta0 is None:
-            if self.fit_type == quadratic:
-                beta0 = [1, 1, 1]
+            if hasattr(self, 'beta0') and self.beta0 is not None:
+                beta0 = self.beta0
+            elif self.fit_type == quadratic:
+                try:
+                    beta0 = list(np.polyfit(self.x, self.y, 2))
+                except Exception:
+                    beta0 = [1, 1, 1]
             elif self.fit_type == lin:
-                beta0 = [1, 1]
+                try:
+                    beta0 = list(np.polyfit(self.x, self.y, 1))
+                except Exception:
+                    beta0 = [1, 1]
         mod = Model(self.fit_type)
         data1 = RealData(self.x, self.y, self.ux, self.uy)
         odr = ODR(data1, mod, beta0)
