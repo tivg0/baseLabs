@@ -484,14 +484,75 @@ def plot(dataset, label="Dados", color="black", hlines=None, meanAndStd=False,xs
     plt.show()
 
 
-def plotHist(dataset, bins="auto", axis="y", label="Histograma", color="#4C7BB8", edgecolor="black", alpha=0.7, density=False, normalize=False, meanAndStd=False, gaussian=False, poisson=False, vlines=None, title=None, xlabel=None, ylabel=None):
+def _calculate_hist_bins(data, bins="auto", intcentered=False, AllN=False):
+    if AllN:
+        try:
+            arr_np = np.asarray(data)
+            if (
+                arr_np.size == 0
+                or not np.issubdtype(arr_np.dtype, np.number)
+                or not np.all(np.isfinite(arr_np))
+                or not bool(np.all(arr_np == np.floor(arr_np)))
+            ):
+                raise ValueError("Not all values are integers")
+        except Exception as e:
+            if str(e) == "Not all values are integers":
+                raise
+            raise ValueError("Not all values are integers")
+
+        min_val = int(np.min(data))
+        max_val = int(np.max(data))
+        if min_val == max_val:
+            return np.array([min_val - 0.5, min_val + 0.5]) if intcentered else np.array([min_val, min_val + 1])
+        if intcentered:
+            return np.arange(min_val - 0.5, max_val + 1.5, 1)
+        else:
+            return np.arange(min_val, max_val + 2, 1)
+
+    if intcentered:
+        if isinstance(bins, (list, tuple, np.ndarray)):
+            b_arr = np.asarray(bins, dtype=float)
+            centers = (b_arr[:-1] + b_arr[1:]) / 2.0
+            if np.all(centers == np.floor(centers)):
+                return b_arr
+            shift = np.round(centers[0]) - centers[0]
+            shifted = b_arr + shift
+            w = np.diff(b_arr)[0] if len(b_arr) > 1 else 1.0
+            while np.min(data) < shifted[0]:
+                shifted = np.insert(shifted, 0, shifted[0] - w)
+            while np.max(data) > shifted[-1]:
+                shifted = np.append(shifted, shifted[-1] + w)
+            return shifted
+        else:
+            b_edges = np.histogram_bin_edges(data, bins=bins)
+            raw_w = (b_edges[-1] - b_edges[0]) / max(1, len(b_edges) - 1)
+            step = max(1, int(round(raw_w)))
+            min_val = np.min(data)
+            max_val = np.max(data)
+            c_start = int(round(min_val))
+            while c_start - 0.5 * step > min_val:
+                c_start -= step
+            c_end = int(round(max_val))
+            while c_end + 0.5 * step < max_val:
+                c_end += step
+            centers = np.arange(c_start, c_end + step, step)
+            actual = np.append(centers - 0.5 * step, centers[-1] + 0.5 * step)
+            return actual
+
+    return np.histogram_bin_edges(data, bins=bins) if isinstance(bins, str) else bins
+
+
+def plotHist(dataset, bins="auto", axis="y", label="Histograma", color="#4C7BB8", edgecolor="black", alpha=0.7, density=False, normalize=False, meanAndStd=False, gaussian=False, poisson=False, intcentered=False, AllN=False, vlines=None, title=None, xlabel=None, ylabel=None):
     plt.figure(figsize=(12, 8))
     
-    data = dataset.y if axis == "y" else dataset.x
+    if hasattr(dataset, "y") and hasattr(dataset, "x"):
+        data = dataset.y if axis == "y" else dataset.x
+    else:
+        data = np.asarray(dataset)
     
     weights = np.ones(len(data)) / len(data) if normalize else None
     d = False if normalize else density
-    actual_bins = np.histogram_bin_edges(data, bins=bins) if isinstance(bins, str) else bins
+    actual_bins = _calculate_hist_bins(data, bins=bins, intcentered=intcentered, AllN=AllN)
     counts, bin_edges, patches = plt.hist(data, bins=actual_bins, weights=weights, color=color, edgecolor=edgecolor, alpha=alpha, density=d, label=label)
 
     if vlines is not None:
@@ -545,8 +606,8 @@ def plotHist(dataset, bins="auto", axis="y", label="Histograma", color="#4C7BB8"
 
             plt.plot(k, yp_plot, color="orange", marker="o" if len(k) <= 50 else "", markersize=4, linewidth=1.8, label=f"Poisson ($\\lambda={mu:.2e}$)")
 
-    t = title if title is not None else dataset.titulo
-    lx = xlabel if xlabel is not None else (dataset.labely if axis == "y" else dataset.labelx)
+    t = title if title is not None else getattr(dataset, "titulo", "Histograma")
+    lx = xlabel if xlabel is not None else (getattr(dataset, "labely", "y") if axis == "y" else getattr(dataset, "labelx", "x"))
     if ylabel is not None:
         ly = ylabel
     elif normalize:
@@ -570,7 +631,7 @@ plotHistogram = plotHist
 plotHistograma = plotHist
 
 
-def plotMultiHist(datasets, nrows=None, ncols=None, bins="auto", axis="y", color="#4C7BB8", edgecolor="black", alpha=0.7, density=False, normalize=False, meanAndStd=False, gaussian=False, poisson=False, figsize=None, titles=None, xlabels=None, ylabels=None):
+def plotMultiHist(datasets, nrows=None, ncols=None, bins="auto", axis="y", color="#4C7BB8", edgecolor="black", alpha=0.7, density=False, normalize=False, meanAndStd=False, gaussian=False, poisson=False, intcentered=False, AllN=False, figsize=None, titles=None, xlabels=None, ylabels=None):
     N = len(datasets)
     if N == 0:
         return None, None
@@ -602,15 +663,22 @@ def plotMultiHist(datasets, nrows=None, ncols=None, bins="auto", axis="y", color
             continue
 
         ds = datasets[i]
-        data = ds.y if axis == "y" else ds.x
+        if hasattr(ds, "y") and hasattr(ds, "x"):
+            data = ds.y if axis == "y" else ds.x
+        else:
+            data = np.asarray(ds)
 
         b = bins[i] if isinstance(bins, list) and len(bins) > i else bins
         c = color[i] if isinstance(color, list) and len(color) > i else color
-        lbl = ds.titulo if ds.titulo else f"Dataset {i+1}"
+        int_c = intcentered[i] if isinstance(intcentered, list) and len(intcentered) > i else intcentered
+        all_n = AllN[i] if isinstance(AllN, list) and len(AllN) > i else AllN
+        lbl = getattr(ds, "titulo", None)
+        if not lbl:
+            lbl = f"Dataset {i+1}"
 
         weights = np.ones(len(data)) / len(data) if normalize else None
         d = False if normalize else density
-        actual_b = np.histogram_bin_edges(data, bins=b) if isinstance(b, str) else b
+        actual_b = _calculate_hist_bins(data, bins=b, intcentered=int_c, AllN=all_n)
         counts, bin_edges, patches = ax.hist(data, bins=actual_b, weights=weights, color=c, edgecolor=edgecolor, alpha=alpha, density=d, label=fr"${lbl}$")
 
         if meanAndStd:
@@ -659,8 +727,8 @@ def plotMultiHist(datasets, nrows=None, ncols=None, bins="auto", axis="y", color
 
                 ax.plot(k, yp_plot, color="orange", marker="o" if len(k) <= 50 else "", markersize=4, linewidth=1.8, label=f"Poisson ($\\lambda={mu:.2e}$)")
 
-        t = titles[i] if (isinstance(titles, list) and len(titles) > i) else (titles if titles is not None else ds.titulo)
-        lx = xlabels[i] if (isinstance(xlabels, list) and len(xlabels) > i) else (xlabels if xlabels is not None else (ds.labely if axis == "y" else ds.labelx))
+        t = titles[i] if (isinstance(titles, list) and len(titles) > i) else (titles if titles is not None else getattr(ds, "titulo", f"Dataset {i+1}"))
+        lx = xlabels[i] if (isinstance(xlabels, list) and len(xlabels) > i) else (xlabels if xlabels is not None else (getattr(ds, "labely", "y") if axis == "y" else getattr(ds, "labelx", "x")))
         if ylabels is not None:
             ly = ylabels[i] if isinstance(ylabels, list) and len(ylabels) > i else ylabels
         elif normalize:
