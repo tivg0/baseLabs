@@ -196,3 +196,21 @@ def getSignAlg(xs, uxs=None):
 
 def fucknan(arr):
     return arr[~np.isnan(arr)]
+
+def filtrar_por_delta(array1, array2, delta):
+    """
+    Filtra o array1 mantendo apenas os elementos que diferem de menos do que 'delta' 
+    de pelo menos um elemento do array2.
+    """
+    arr1 = np.asarray(array1)
+    arr2 = np.asarray(array2)
+    
+    # Calcula a matriz de diferenças absolutas entre todos os elementos de arr1 e arr2
+    # Dimensões da matriz: (tamanho de arr1, tamanho de arr2)
+    diffs = np.abs(arr1[:, np.newaxis] - arr2)
+    
+    # Cria uma máscara booleana: verifica onde a diferença é menor que delta em cada linha
+    mask = np.any(diffs < delta, axis=1)
+    
+    # Retorna apenas os elementos do array1 que cumprem a condição
+    return arr1[mask]
