@@ -1,3 +1,4 @@
+import io
 import numpy as np
 from scipy.odr import RealData, Model, ODR
 import matplotlib.pyplot as plt
@@ -8,9 +9,22 @@ def derivativePolinomialCoefs(coefs):
         coefs[i] *= (N-i)
     return coefs[1:]
 
-def getData(filename, skip=1):
-    #converters = {0: lambda s: float(s.decode("utf-8").replace(",", "."))}
-    return np.genfromtxt(filename, delimiter="\t", unpack=True, skip_header=skip)
+def getData(filename, skip=1, delimiter="\t", encoding=None, **kwargs):
+    if encoding is not None:
+        with open(filename, 'r', encoding=encoding) as f:
+            content = f.read()
+    else:
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            with open(filename, 'r', encoding='latin1') as f:
+                content = f.read()
+
+    if delimiter != ",":
+        content = content.replace(",", ".")
+
+    return np.genfromtxt(io.StringIO(content), delimiter=delimiter, unpack=True, skip_header=skip, **kwargs)
 
 def getAdjust(func_or_dataset, x=None, y=None, ux=None, uy=None, beta0=None):
     if hasattr(func_or_dataset, 'x') and hasattr(func_or_dataset, 'y'):
@@ -196,3 +210,14 @@ def getSignAlg(xs, uxs=None):
 
 def fucknan(arr):
     return arr[~np.isnan(arr)]
+
+
+def smooth(arr, fac):
+    arr = np.asarray(arr)
+    if fac <= 0:
+        return arr.copy()
+    window = 2 * fac + 1
+    if len(arr) < window:
+        return arr.copy()
+    return np.convolve(arr, np.ones(window) / window, mode='valid')  
+    
