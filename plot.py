@@ -458,17 +458,75 @@ def plotColumnReg(datasets, tol=1):
     return adjusts
 
 
-def plot(dataset, label="Dados", color="black", hlines=None, meanAndStd=False,xscale="linear",yscale="linear"):
-    plt.figure(figsize=(12,8))
-    if dataset.ux is None and dataset.uy is None:
-        plt.scatter(dataset.x, dataset.y, c=color, label=label)
+def plot(dataset, label="Dados", color="black", hlines=None, vlines=None, meanAndStd=False, xscale="linear", yscale="linear",
+         tipo="pontos", line=False, linha=False, lines=False, linhas=False,
+         linewidth=None, lw=None, linestyle=None, ls=None,
+         s=None, point_size=None, markersize=None, errorbars=True,
+         kind=None, mode=None, fmt=None, **kwargs):
+    plt.figure(figsize=(12, 8))
+
+    as_line = False
+    if line or linha or lines or linhas:
+        as_line = True
+
+    t = tipo or kind or mode
+    if isinstance(t, str):
+        if t.lower() in ["linha", "line", "l", "-", "lines"]:
+            as_line = True
+        elif t.lower() in ["pontos", "ponto", "points", "point", "p", "o", "scatter"]:
+            as_line = False
+    elif isinstance(t, bool):
+        as_line = t
+
+    if isinstance(label, str) and label.lower() in ["linha", "line"]:
+        as_line = True
+        label = "Dados"
+    elif isinstance(label, str) and label.lower() in ["pontos", "points"]:
+        as_line = False
+        label = "Dados"
+
+    if fmt is not None:
+        if "-" in fmt and "o" not in fmt:
+            as_line = True
+        elif "o" in fmt and "-" not in fmt:
+            as_line = False
+
+    extra_line = {}
+    if linewidth is not None:
+        extra_line["linewidth"] = linewidth
+    elif lw is not None:
+        extra_line["linewidth"] = lw
+    if linestyle is not None:
+        extra_line["linestyle"] = linestyle
+    elif ls is not None:
+        extra_line["linestyle"] = ls
+
+    pt_size = s if s is not None else (point_size if point_size is not None else markersize)
+
+    if as_line:
+        plt.plot(dataset.x, dataset.y, c=color, label=label, **extra_line)
     else:
-        plt.errorbar(dataset.x, dataset.y, xerr=dataset.ux, yerr=dataset.uy, fmt="o", c=color, label=label, capsize=4)
+        if not errorbars or (dataset.ux is None and dataset.uy is None):
+            sc_kwargs = {"s": pt_size} if pt_size is not None else {}
+            plt.scatter(dataset.x, dataset.y, c=color, label=label, **sc_kwargs)
+        else:
+            eb_kwargs = {"capsize": 4}
+            if pt_size is not None:
+                eb_kwargs["markersize"] = pt_size
+            plt.errorbar(dataset.x, dataset.y, xerr=dataset.ux, yerr=dataset.uy, fmt="o" if fmt is None else fmt, c=color, label=label, **eb_kwargs)
 
     if hlines is not None:
         for i in hlines:
-            plt.axhline(i[0], color=i[2], label=i[1])
-    
+            c = i[2] if len(i) > 2 else "red"
+            lbl = i[1] if len(i) > 1 else None
+            plt.axhline(i[0], color=c, label=lbl)
+
+    if vlines is not None:
+        for i in vlines:
+            c = i[2] if len(i) > 2 else "red"
+            lbl = i[1] if len(i) > 1 else None
+            plt.axvline(i[0], color=c, label=lbl)
+
     if meanAndStd:
         plt.axhline(np.mean(dataset.y), color="red", label=f"Média {np.mean(dataset.y):.2e}")
         plt.axhline(np.mean(dataset.y) + np.std(dataset.y), color="orange", label=f"Desvio Padrão {np.std(dataset.y):.2e}")

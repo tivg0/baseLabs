@@ -1,3 +1,4 @@
+import re
 import io
 import numpy as np
 from scipy.odr import RealData, Model, ODR
@@ -42,9 +43,13 @@ def getAdjust(func_or_dataset, x=None, y=None, ux=None, uy=None, beta0=None):
     return output
 
 def getPolynomialLabel(beta, x, y):
-    x = x.split('(')[0]
-    y = y.split('(')[0]
-    s = rf"${y}({x}) = "
+    x_clean = re.sub(r'\s+\([^\)]+\)$', '', x).strip()
+    y_clean = re.sub(r'\s+\([^\)]+\)$', '', y).strip()
+    if '(' in y_clean:
+        s = rf"${y_clean} = "
+    else:
+        s = rf"${y_clean}({x_clean}) = "
+    x = x_clean
     
     for i in range(len(beta)):
         coef_power = len(beta) - i - 1
@@ -138,9 +143,13 @@ def round_un(x, u):
     return np.array([x_rounded, u_rounded, decimals])
 
 def getPolynomialLabel2(beta, betastd, x, y):
-    x = x.split('(')[0]
-    y = y.split('(')[0]
-    s = rf"${y}({x}) = "
+    x_clean = re.sub(r'\s+\([^\)]+\)$', '', x).strip()
+    y_clean = re.sub(r'\s+\([^\)]+\)$', '', y).strip()
+    if '(' in y_clean:
+        s = rf"${y_clean} = "
+    else:
+        s = rf"${y_clean}({x_clean}) = "
+    x = x_clean
     
     for i in range(len(beta)):
         coef_power = len(beta) - i - 1
